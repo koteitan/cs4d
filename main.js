@@ -8,14 +8,16 @@ var isDebug2=false; //debug flag
  // for world
 var dims = 4;
 var secPframe = 1; // [sec/frame]
-var geomW = Geom(2, [[-1,1],[-1,1]]);
+var geomW = new Geom(2, [[-1,-1],[+1,+1]]);
 var geomD;
 
  // for game
 var inEqList = [
-  [2, -2, -0  , +1],
-  [2, -1, -0.2, +1],
-  [2, +1, -0.5, -1],
+// Ax +By +C    <> 0
+//              -+
+  [1/10, -1, +0.8, +1],
+  [  10, -1, -8  , +1],
+  [  -1, -1, +1  , -1],
 ];
 var inEqs = inEqList.length;
 // dinamic var on game
@@ -49,8 +51,6 @@ var initGui=function(){
 var procDraw=function(){
   var dx = canvas[0].width;
   var dy = canvas[0].height;
-  var dxPpl = dx*invpl;
-  var dyPpl = dy*invpl;
   ctx[0].strokeWeight='1';
   //clear ---------
   ctx[0].lineWidth='1';
@@ -62,14 +62,15 @@ var procDraw=function(){
   //border ---------
   ctx[0].lineWidth='1';
   ctx[0].strokeStyle='rgb(255,255,255)';
-  geomD = Geom(2, [[0,dx],[0 dy]]);
-  
+  geomD = new Geom(2, [[0,0],[dx,dy]]);
+  var c=new Array(inEqs);
   for(var i=0;i<inEqs;i++){
+    c[i]=new Array(inEqs);
     for(var j=i+1;j<inEqs;j++){
-      var c = crossPoint(inEqList[i],inEqList[j]);
-      var dc = transPos([c, geomW, geomD);
+      c[i][j] = crossPoint(inEqList[i],inEqList[j]);
+      var dc = transPos([c[i][j][0],c[i][j][1]], geomW, geomD);
       ctx[0].beginPath();
-      ctx[0].arc(dc[0], dc[1], 0.1, 0, Math.PI*2, false);
+      ctx[0].arc(dc[0], dc[1], 10, 0, Math.PI*2, false);
       ctx[0].stroke();
     }
   }
@@ -88,8 +89,17 @@ var print=function(str){
    [x,y]
 */
 var crossPoint = function(l0, l1){
-  var dims = ls1.length;
-  return mul(inv([[[l0[0],l0[1]],[[l1[0],l1[1]]]),[-l0[2],-l1[2]]);
+  return mulxv(
+      inv([[l0[0],l0[1]],[l1[0],l1[1]]]),
+      [-l0[2],-l1[2]]
+    );
 }
+
+// entry --------------------------------------
+window.onload=function(){
+  initGui();
+  procAll();
+//  setInterval(procAll, 1000/frameRate);
+};
 
 
