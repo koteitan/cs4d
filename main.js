@@ -11,8 +11,7 @@ var secPframe = 1; // [sec/frame]
 var geomW = new Geom(2, [[-1,-1],[+1,+1]]);
 var geomD;
 /* inequalities operator 
- [OP,p0,p1]
-*/
+ [OP,p0,p1] */
 var OP1_IMM = 0; /* immediate value p0 */
 var OP1_NOT = 1; /* complement set of p0 */ 
 var OP2_AND = 2; /* intersection of p0 and p1 */
@@ -23,11 +22,11 @@ var OP2_EQ  = 6; /* p0 == p1 */
 
  // for game
 var inEqList = [
-// Ax +By +C    <> 0
-//              -+
-  [1/10, -1, +0.8, +1],
-  [   2, -1, -1  , -1],
-  [  -1, -1, +1  , -1],
+//    0   1   2    3   4   5   6
+//    A  +Bx +Cy  +Dxx+Exy+Fyy <> 0
+  [+0.8, 0.1, -1,  0,  0,  0,  +1],
+  [-1  ,   2, -1,  0,  0,  0,  -1],
+  [+1  ,  -1, -1,  0,  0,  0,  -1],
 ];
 var tree;
   tree = [
@@ -80,73 +79,139 @@ var procDraw=function(){
   ctx[0].strokeStyle='rgb(255,255,255)';
   var geomD = new Geom(2, [[0,dy],[dx,0]]);
   
-  /* find set of cross point cqList[cqi]=[i,j,x,y];
-    i,j = indices of inEqList.
-    x,y = cross point.
-    cqi : less cqi means less x.
+  /* 
+  xEvList[xi] = x 
+   : the xi th least x in which some event occur.
+     
+  cqList[i][j] = [cx, cy]
+   : the cross point with j th least x of ith inequality.
   */
-  var cqList = [];
-  var cqList_each = new Array(inEqs);
-  var cqs = 0;
+  var xEvList = [geomW.w[0][0], geomW.w[1][0]];
+  var cqList = new Array(inEqs);
+  var xis = 2;
   {
-    var cqi = 0;
+    var xi = 0;
     for(var i=0;i<inEqs;i++){
-      cqList_each[i]=[];
-      for(var j=0;j<inEqs;j++){
-        if(i!=j){
-          var tmp = crossPoint(inEqList[i],inEqList[j]);
-          if(geomW.w[0][0]<tmp[0] && tmp[0]<geomW.w[1][0] &&
-             geomW.w[0][1]<tmp[1] && tmp[1]<geomW.w[1][1]){
-            // in display
-            // add each cross point list
-            cqList_each[i][cqList_each[i].length]=tmp;
-             // add cross point list
-            if(i<j){
-              cqList[cqs]=[i,j,tmp[0],tmp[1]];
-              cqs++;
-            }
-          }// in display
-        }
-      }//j
-      cqList_each[i].sort(function(a,b){return a[0]-b[0]});
+      cqList[i]=[];
+      if(inEqList[i][1]!=0 && inEqList[i][2]==0 && inEqList[i][3]==0 && inEqList[i][4]==0 && inEqList[i][5]==0){
+        //yŽ²‚É•½s‚È’¼ü A+Bx=0 x=-A/B
+        xEvList[xis] = -inEqList[i][0]/inEqList[i][1];
+        xis++;
+      }else{
+        for(var j=0;j<inEqs;j++){
+          if(i!=j){
+            var cq;
+            //’¼ü
+            cq = crossPointLines(inEqList[i],inEqList[j]);
+            if(geomW.w[0][0]<cq[0] && cq[0]<geomW.w[1][0] &&
+               geomW.w[0][1]<cq[1] && cq[1]<geomW.w[1][1]){
+              // in display
+              // add each cross point list
+              cqList[i][cqList[i].length] = cq;
+               // add cross point list
+              if(i<j){
+                if(inEqList[j][2]==0){
+                  //i‚©j‚ªyŽ²‚É•½s‚È’¼ü
+                  //nop
+                }else{
+                  //•’Ê‚Ì’¼ü“¯Žm
+                  xEvList[xis] = cq[0];
+                  xis++;
+                }
+              }//i<j
+            }// in display
+          }//i!=j
+        }//j
+      }//if
+      cqList[i].sort(function(a,b){return a[0]-b[0]});
     }//i
-    cqList.sort(function(a,b){return a[2]-b[2];});
+    xEvList.sort();
   }
   
+  for(var i=0;i<inEqs;i++){
+  for(var j=0;j<cqList[i].length;j++){
+          //------------------
+          ctx[0].strokeStyle='rgb(255,255,255)';
+          ctx[0].beginPath();
+          var dq = transPos(cqList[i][j], geomW, geomD);
+          ctx[0].arc(dq[0], dq[1], 5, 0, Math.PI*2, false);
+          ctx[0].stroke();
+          //------------------
+  }
+  }
 
-        /* interceptList[k] = [i,y];
+
+
+  var cqiNow = new Array(inEqs);
+  for(var i=0;i<inEqs;i++) cqiNow[i]=0;
+  
+  ctx[0].strokeStyle='rgb(0,0,255)';
+  for(var xi=0;xi<xis;xi++){
+    var d0 = transPos([xEvList[xi],geomW.w[0][1]], geomW, geomD);
+    var d1 = transPos([xEvList[xi],geomW.w[1][1]], geomW, geomD);
+    ctx[0].beginPath();
+    ctx[0].moveTo(d0[0],d0[1]);
+    ctx[0].lineTo(d1[0],d1[1]);
+    ctx[0].stroke();
+  }
+    
+  {//scope
+    var x = xEvList[0];
+    for(var xi=1;xi<xis;xi++){ //for xi (x)
+      var midx = (x+xEvList[xi])/2;
+      //-------------------------------
+      ctx[0].strokeStyle='rgb(255,0,0)';
+      var d0 = transPos([midx,geomW.w[0][1]], geomW, geomD);
+      var d1 = transPos([midx,geomW.w[1][1]], geomW, geomD);
+      ctx[0].beginPath();
+      ctx[0].moveTo(d0[0],d0[1]);
+      ctx[0].lineTo(d1[0],d1[1]);
+      ctx[0].stroke();
+      //-------------------------------
+      
+      /* interceptList[k] = [i,y];
       i = index of the inEqList
       y = intercept of the inEqList  
       k : less k means less y */
-
-
-  var cqiNow_each = new Array(inEqs);
-  for(var i=0;i<inEqs;i++) cqiNow_each[i]=0;
-  
-  ctx[0].strokeStyle='rgb(255,0,0)';
-  for(var cqi=0;cqi<cqs;cqi++){
-    var dc = transPos([cqList[cqi][2],cqList[cqi][3]], geomW, geomD);
-    ctx[0].beginPath();
-    ctx[0].arc(dc[0], dc[1], 4, 0, Math.PI*2, false);
-    ctx[0].stroke();
-  }
-  
-  {//scope
-    var x = geomW.w[0][0];
-    for(var cqi=0;cqi<cqs;cqi++){ //for cqi (x)
-      var midx = (x+cqList[cqi][2])/2;
-      
-      // calc intercepts
-      interceptList = [];
+      var interceptList = [];
       for(var i=0;i<inEqs;i++){
-        var cy = (inEqList[i][0]*midx + inEqList[i][2])/(-inEqList[i][1]);
-        if(geomW.w[0][1]<cy && cy<geomW.w[1][1]){
-          interceptList[interceptList.length]=[i,cy];
+        var ieq=inEqList[i];
+        if(ieq[3]==0 && ieq[4]==0 && ieq[5]==0){
+          //’¼ü
+          if(ieq[2]!=0){
+            //•’Ê‚Ì’¼ü
+            var cy = (ieq[1]*midx + ieq[0])/(-ieq[2]);
+            interceptList[interceptList.length]=[i,cy];
+          }else{
+            //y Ž²‚É•½s‚È’¼ü
+            //Œð“_‚È‚µ
+          }
+        }else{
+          //‚QŽŸ‹Èü
+          //eqa y^2 +   eqb y +       eqc  = 0
+          //  F y^2 + (C+Ex)y + (A+Bx+Dxx) = 0
+          var eqa = ieq[5];
+          var eqb = ieq[2]+ieq[4]*midx;
+          var eqc = ieq[0]+ieq[1]*midx+ieq[3]*midx*midx;
+          //“Á«•û’öŽ®
+          var charaEq = eqb-4*eqa*eqc;
+          if(charaEq>0){
+            var cy;
+            var sqrtCharaEq = Math.sqrt(charaEq);
+            cy = (-eqb-sqrtCharaEq)/(4*eqa);
+            interceptList[interceptList.length]=[i,cy];
+            cy = (-eqb+sqrtCharaEq)/(4*eqa);
+            interceptList[interceptList.length]=[i,cy];
+          }else{
+          }
+          
+        }
+        if(!isNaN(cy) && geomW.w[0][1]<cy && cy<geomW.w[1][1]){
           //------------------
           ctx[0].strokeStyle='rgb(0,255,255)';
           ctx[0].beginPath();
           var dq = transPos([midx,cy], geomW, geomD);
-          ctx[0].arc(dq[0], dq[1], 10, 0, Math.PI*2, false);
+          ctx[0].arc(dq[0], dq[1], 5, 0, Math.PI*2, false);
           ctx[0].stroke();
           //------------------
         }
@@ -157,21 +222,25 @@ var procDraw=function(){
       var y = geomW.w[0][1];
       for(var isi=0;isi<interceptList.length;isi++){ //for y
         var midy = (interceptList[isi][1] + y)/2;
-        
-
-        var newf = testPoint([midx, midy],tree);
-
-        if(newf){
-          ctx[0].strokeStyle='rgb(255,0,255)';
-        }else{
-          ctx[0].strokeStyle='rgb(0,0,255)';
-        }
         //------------------
+        ctx[0].strokeStyle='rgb(255,255,0)';
         ctx[0].beginPath();
         var dq = transPos([midx,midy], geomW, geomD);
         ctx[0].arc(dq[0], dq[1], 5, 0, Math.PI*2, false);
         ctx[0].stroke();
         //------------------
+        
+        var newf = testPoint([midx, midy],tree);
+
+        if(newf){
+        //------------------
+        ctx[0].strokeStyle='rgb(255,0,255)';
+        ctx[0].beginPath();
+        var dq = transPos([midx,midy], geomW, geomD);
+        ctx[0].arc(dq[0], dq[1], 5, 0, Math.PI*2, false);
+        ctx[0].stroke();
+        //------------------
+        }
 
         
           ctx[0].strokeStyle='rgb(255,255,255)';
@@ -179,9 +248,9 @@ var procDraw=function(){
 //        if(0){
           //stroke
           var ii = interceptList[isi-1][0];
-          var cq0 = cqList_each[ii][cqiNow_each[ii]];
-          if(cq0[0] < midx) cqiNow_each[ii]++;
-          var cq1 = cqList_each[ii][cqiNow_each[ii]];
+          var cq0 = cqList[ii][cqiNow[ii]];
+          if(cq0[0] < midx) cqiNow[ii]++;
+          var cq1 = cqList[ii][cqiNow[ii]];
           
           // display coordinate
           var dq0 = transPos(cq0, geomW, geomD);
@@ -194,8 +263,8 @@ var procDraw=function(){
         f = newf;
         y = interceptList[isi][1];
       }// for(isi) (y)
-      x = cqList[cqi][2];
-    }// for(cqi) (x)
+      x = xEvList[xi];
+    }// for(xi) (x)
   }//scope
   
 
@@ -224,10 +293,10 @@ var testPoint = function(q,r){
     case false: return false;
     case true : return true;
     case OP1_IMM:
-      if(r[1][3]>0){
-        return r[1][0]*q[0]+r[1][1]*q[1]+r[1][2]>0;
+      if(r[1][6]>0){
+        return r[1][0]+r[1][1]*q[0]+r[1][2]*q[1]+r[1][3]*q[0]*q[0]+r[1][4]*q[0]*q[1]+r[1][5]*q[1]*q[1] >  0;
       }else{
-        return r[1][0]*q[0]+r[1][1]*q[1]+r[1][2]<0;
+        return r[1][0]+r[1][1]*q[0]+r[1][2]*q[1]+r[1][3]*q[0]*q[0]+r[1][4]*q[0]*q[1]+r[1][5]*q[1]*q[1] <= 0;
       }
     case OP1_NOT: return !testPoint(q, r[1]);
     case OP2_AND: return testPoint(q, r[1]) &&  testPoint(q, r[2]);
@@ -250,10 +319,10 @@ var print=function(str){
   out:
    [x,y]
 */
-var crossPoint = function(l0, l1){
+var crossPointLines = function(l0, l1){
   return mulxv(
-      inv([[l0[0],l0[1]],[l1[0],l1[1]]]),
-      [-l0[2],-l1[2]]
+      inv([[l0[1],l0[2]],[l1[1],l1[2]]]),
+      [-l0[0],-l1[0]]
     );
 }
 

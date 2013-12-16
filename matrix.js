@@ -6,13 +6,15 @@
 */
 var inv = function(a){
   if(a.length==2){
-    var invdet = 1/(a[0][0]*a[1][1]-a[0][1]*a[1][0]);
+    var det = a[0][0]*a[1][1]-a[0][1]*a[1][0];
+    if(det==0) return [[NaN,NaN],[NaN,NaN] ];
+    var invdet = 1/det;
     return [
       [ a[1][1]*invdet,-a[0][1]*invdet],
       [-a[1][0]*invdet, a[0][0]*invdet],
     ];
   }else{
-    return 0;
+    return NaN;
   }
 };
 var mul = function(a0, a1){
