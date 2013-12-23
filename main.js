@@ -106,14 +106,12 @@ var procDraw=function(){
   var geomD = new Geom(2, [[0,dy],[dx,0]]);
   
   /* 
-  cpList[xi] = [x, y, i, j] = cross point list
+  cqList[cqi] = [x, y, i, j] = cross point list
     x,y  = cross point
     i,j  = indices of inequalities that cross.
   */
-  var cpList = [];
+  var cqList = [];
   {
-    var xi = 0;
-
     // find all cross point in display
     for(var i=0;i<inEqs;i++){
       
@@ -125,14 +123,14 @@ var procDraw=function(){
           // if in display
           
           if(i<j){
-            cpList[cpList.length] = [cq[0],cq[1],i,j];
+            cqList[cqList.length] = [cq[0],cq[1],i,j];
           }
         }
       }// for j
     }//i
     
     // sort corss points
-    cpList.sort(function(a,b){
+    cqList.sort(function(a,b){
       if(a[0]==b[0]){
         return a[1]-b[1]
       }else{
@@ -146,26 +144,30 @@ var procDraw=function(){
   for(var i=0;i<inEqs;i++) cqiNow[i]=0;
   
   ctx[0].strokeStyle='rgb(0,0,255)';
-  for(var xi=0;xi<cpList.length;xi++){
-    var d0 = transPos([cpList[xi][0],geomW.w[0][1]], geomW, geomD);
-    var d1 = transPos([cpList[xi][0],geomW.w[1][1]], geomW, geomD);
+  for(var cqi=0;cqi<cqList.length;cqi++){
+    var d0 = transPos([cqList[cqi][0],geomW.w[0][1]], geomW, geomD);
+    var d1 = transPos([cqList[cqi][0],geomW.w[1][1]], geomW, geomD);
     ctx[0].beginPath();
     ctx[0].moveTo(d0[0],d0[1]);
     ctx[0].lineTo(d1[0],d1[1]);
     ctx[0].stroke();
   }
-  var prex = cpList[0][0];
+  var prex = cqList[0][0];
   var prediffx = prex;
   var pref;
-  for(var xi=1;xi<cpList.length;xi++){ //for each cross points
-    var nowx = cpList[xi][0];
+  for(var cqi=1;cqi<cqList.length;cqi++){ //for each cross points
+    var nowx = cqList[cqi][0];
     if(nowx==geomW.w[0][0] || nowx==geomW.w[0][1]){
       // on boundary of the world
       
       // do not draw
       prediffx = prex;
       
-    }else if(prex!=nowx){
+    }else if(prex!=nowx && !(
+      cqList[cqi-1][2]==cqList[cqi][2] ||
+      cqList[cqi-1][2]==cqList[cqi][3] ||
+      cqList[cqi-1][3]==cqList[cqi][3] 
+    )){
       var midx = (prex+nowx)/2;
       //-------------------------------
       ctx[0].strokeStyle='rgb(255,0,0)';
@@ -277,12 +279,12 @@ var procDraw=function(){
           var c0=[-Infinity,0];
           var c1=[+Infinity,0];
           var j0=0,j1=0;
-          for(var xi2=0;xi2<cpList.length;xi2++){
-            if(ii==cpList[xi2][2] || ii==cpList[xi2][3]){
+          for(var cqi2=0;cqi2<cqList.length;cqi2++){
+            if(ii==cqList[cqi2][2] || ii==cqList[cqi2][3]){
               // cross point of ii is found
-              var x = cpList[xi2][0];
-              var y = cpList[xi2][1];
-              var j = (ii==cpList[xi2][2]) ? cpList[xi2][2]:cpList[xi2][3];
+              var x = cqList[cqi2][0];
+              var y = cqList[cqi2][1];
+              var j = (ii==cqList[cqi2][2]) ? cqList[cqi2][2]:cqList[cqi2][3];
               if(x<midx){
                 if(c0[0] < x){
                   // nearest x is found
@@ -312,26 +314,43 @@ var procDraw=function(){
     
     }else{ // if(prex!=nowx)
       //prex==nowx (if yaxis line)
+
+      /*
+              b^      
+              { ........ y1
+            ^b       
+              b         
+              b   
+              b         
+              b^      
+              {......... y0
+            ^b      
+           
+      */
+
+      if(cqList[cqi-1][1]==cqList[cqi][1]) continue;
       var midx0 = (prediffx+nowx)/2;
       var nextdiffx = geomW.w[0][1];
-      for(var xi2=xi+1;xi2<cpList.length;xi2++){
-        if(cpList[xi2][0] > nowx){
-          nextdiffx = cpList[xi2][0];
+      for(var cqi2=cqi+1;cqi2<cqList.length;cqi2++){
+        if(cqList[cqi2][0] > nowx){
+          nextdiffx = cqList[cqi2][0];
+          break;
         }
       }
       var midx1 = (nowx+nextdiffx)/2;
-      var midy = (cpList[xi-1][1]+cpList[xi][1])/2;
+      
+      var c0=[nowx, cqList[cqi-1][1]];
+      var c1=[nowx, cqList[cqi  ][1]];
+      var midy = (c0[1]+c1[1])/2;
       var f0 = testPoint([midx0, midy],tree);
       var f1 = testPoint([midx1, midy],tree);
       if(f0!=f1){
-        var c0=[nowx,-Infinity];
-        var c1=[nowx,+Infinity];
         var j0=0,j1=0;
-        for(var xi2=0;xi2<cpList.length;xi2++){
-          if(cpList[xi2][0]==nowx){
+        for(var cqi2=0;cqi2<cqList.length;cqi2++){
+          if(cqList[cqi2][0]==nowx){
             // cross point on x=nowx is found
-            var y = cpList[xi2][1];
-            var j = (nowx==cpList[xi2][0]) ? cpList[xi2][3]:cpList[xi2][2];
+            var y = cqList[cqi2][1];
+            var j = (nowx==cqList[cqi2][0]) ? cqList[cqi2][3]:cqList[cqi2][2];
             if(y<midy){
               if(c0[1] < y){
                 // nearest y is found
@@ -357,7 +376,7 @@ var procDraw=function(){
     }// if yaxis
     
     prex = nowx;
-  }// for(xi) (x)
+  }// for(cqi) (x)
   
 
   ctx[0].strokeStyle='rgb(0,255,0)';
