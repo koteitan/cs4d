@@ -37,13 +37,13 @@ Array.prototype.mean = function(){
     return this.sum()/this.length;
 }
 Array.prototype.clone = function(){
-    if ( this[0].constructor == Array ) {
-        var ar, n;
-        ar = new Array( this.length );
-        for ( n = 0; n < ar.length; n++ ) {
-            ar[n] = this[n].clone();
-        }
-        return ar;
+  var ret = new Array(this.length);
+  for(var i=0;i<this.length;i++){
+    if(this[i].constructor==Array){
+      ret[i]=this[i].clone();
+    }else{
+      ret[i]=this[i];
     }
-    return Array.apply( null, this );
+  }
+  return ret;
 }
