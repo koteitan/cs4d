@@ -24,18 +24,42 @@ var OPN_OR  = 8; /* union of p0 ... pN */
 
  // for game
 var inEqList = [
+  [ -(geomW.w[0][0]),  1,  0,  0,  0,  0,  +1],
+  [ -(geomW.w[1][0]),  1,  0,  0,  0,  0,  -1],
+  [ -(geomW.w[0][1]),  0,  1,  0,  0,  0,  +1],
+  [ -(geomW.w[1][1]),  0,  1,  0,  0,  0,  -1],
 //        0   1   2    3   4   5   6
 //        A  +Bx +Cy  +Dxx+Exy+Fyy <> 0
-  [ -(  0 ),  1,  0.3,  0,  0,  0,  +1],
-  [ -(0.5 ),  1,  0.6,  0,  0,  0,  -1],
-  [ -(0.25),  0,  1,  0,  0,  0,  +1],
-  [ -(0.75),  0,  1,  0,  0,  0,  -1],
+  [ -( 0.25),   0,  1, 0,  0,  0,  +1],
+  [ -( 0.75),   0,  1, 0,  0,  0,  -1],
+  [ -( 0.25),   1,  0, 0,  0,  0,  +1],
+  [ -( 0.75),   1,  0, 0,  0,  0,  -1],
+  [ -( 0.25),   0,  1, 0,  0,  0,  +1],
+  [ -( 0.75),   0,  1, 0,  0,  0,  -1],
+  [ -(-0.75),   1,  0, 0,  0,  0,  +1],
+  [ -(-0.25),   1,  0, 0,  0,  0,  -1],
 ];
-var tree = new Array(inEqList.length+1);
-tree[0] = OPN_AND;
-for(var i=0;i<inEqList.length;i++){
-  tree[i+1] = [OP1_IMM, inEqList[i]];
-}
+var tw = [OPN_AND, 
+  [OP1_IMM, inEqList[0]],
+  [OP1_IMM, inEqList[1]],
+  [OP1_IMM, inEqList[2]],
+  [OP1_IMM, inEqList[3]]
+];
+var t0 = [OPN_AND, 
+  [OP1_IMM, inEqList[4]],
+  [OP1_IMM, inEqList[5]],
+  [OP1_IMM, inEqList[6]],
+  [OP1_IMM, inEqList[7]]
+];
+var t1 = [OPN_AND, 
+  [OP1_IMM, inEqList[8]],
+  [OP1_IMM, inEqList[9]],
+  [OP1_IMM, inEqList[10]],
+  [OP1_IMM, inEqList[11]]
+];
+var t01 =  [OPN_OR, t0, t1];
+var tree = [OPN_AND, t01, tw];
+
 var inEqs = inEqList.length;
 // dinamic var on game
 var timenow=0;
@@ -82,97 +106,67 @@ var procDraw=function(){
   var geomD = new Geom(2, [[0,dy],[dx,0]]);
   
   /* 
-  xEvList[xi] = [x, type, i, j] = x-event.
-    x    = point of the event is occur. (sorted as less x with less xi.)
-    type = type of event {"cross","yaxis","wall"}
+  cpList[xi] = [x, y, i, j] = cross point list
+    x,y  = cross point
     i,j  = indices of inequalities that cross.
-    
-  cqList[i][j] = [cx, cy]
-   : the cross point with j th least x of ith inequality.
   */
-  var xEvList = [[geomW.w[0][0],"wall",-1,-1], [geomW.w[1][0],"wall",-1,-1]];
-  var cqList = new Array(inEqs);
+  var cpList = [];
   {
     var xi = 0;
 
-    // check all cross point
-    // (and make x-events)
+    // find all cross point in display
     for(var i=0;i<inEqs;i++){
       
-      cqList[i]=[];
       for(var j=0;j<inEqs;j++){
         var cq = crossPointLines(inEqList[i],inEqList[j]);
         if(!isNaN(cq[0]) &&  !isNaN(cq[1]) && 
-          geomW.w[0][0]<cq[0] && cq[0]<geomW.w[1][0] &&
-          geomW.w[0][1]<cq[1] && cq[1]<geomW.w[1][1]){
-          // in display
-          // add each cross point list
-          cqList[i][cqList[i].length] = cq;
-
-          if(i<j && inEqList[i][2]!=0 && inEqList[j][2]!=0){
-            // i is normal line, j is not yaxis line and i<j
-            // add cross point into x-events
-            xEvList[xEvList.length] = [cq[0],"cross",i,j];
+          geomW.w[0][0]<=cq[0] && cq[0]<=geomW.w[1][0] &&
+          geomW.w[0][1]<=cq[1] && cq[1]<=geomW.w[1][1]){
+          // if in display
+          
+          if(i<j){
+            cpList[cpList.length] = [cq[0],cq[1],i,j];
           }
-
         }
-
       }// for j
-      
-      cqList[i].sort(function(a,b){
-        // less x makes less cqList.
-        // less y makes less one if ones x are the same.
-        (a[0]==b[0])?a[1]-b[1]:a[0]-b[0];
-      });
-        
-      // if yaxis line
-      // A+Bx=0 x=-A/B
     }//i
-
     
-    // make x-events for yaxis-type-lines
-    for(var i=0;i<inEqs;i++){
-      if(inEqList[i][2]==0){
-        xEvList[xEvList.length] = [-inEqList[i][0]/inEqList[i][1], "yaxis", i, -1];
+    // sort corss points
+    cpList.sort(function(a,b){
+      if(a[0]==b[0]){
+        return a[1]-b[1]
+      }else{
+        return a[0]-b[0]
       }
-    }//i
-    
-    // sort xevents
-    xEvList.sort(function(a,b){return a[0]-b[0]});
+    });
   }
-  
-  for(var i=0;i<inEqs;i++){
-  for(var j=0;j<cqList[i].length;j++){
-          //------------------
-          ctx[0].strokeStyle='rgb(255,255,255)';
-          ctx[0].beginPath();
-          var dq = transPos(cqList[i][j], geomW, geomD);
-          ctx[0].arc(dq[0], dq[1], 5, 0, Math.PI*2, false);
-          ctx[0].stroke();
-          //------------------
-  }
-  }
-
 
 
   var cqiNow = new Array(inEqs);
   for(var i=0;i<inEqs;i++) cqiNow[i]=0;
   
   ctx[0].strokeStyle='rgb(0,0,255)';
-  for(var xi=0;xi<xEvList.length;xi++){
-    var d0 = transPos([xEvList[xi][0],geomW.w[0][1]], geomW, geomD);
-    var d1 = transPos([xEvList[xi][0],geomW.w[1][1]], geomW, geomD);
+  for(var xi=0;xi<cpList.length;xi++){
+    var d0 = transPos([cpList[xi][0],geomW.w[0][1]], geomW, geomD);
+    var d1 = transPos([cpList[xi][0],geomW.w[1][1]], geomW, geomD);
     ctx[0].beginPath();
     ctx[0].moveTo(d0[0],d0[1]);
     ctx[0].lineTo(d1[0],d1[1]);
     ctx[0].stroke();
   }
-  
-  {//scope
-    var x = xEvList[0][0];
-    var pref;
-    for(var xi=1;xi<xEvList.length;xi++){ //for each x Events
-      var midx = (x+xEvList[xi][0])/2;
+  var prex = cpList[0][0];
+  var prediffx = prex;
+  var pref;
+  for(var xi=1;xi<cpList.length;xi++){ //for each cross points
+    var nowx = cpList[xi][0];
+    if(nowx==geomW.w[0][0] || nowx==geomW.w[0][1]){
+      // on boundary of the world
+      
+      // do not draw
+      prediffx = prex;
+      
+    }else if(prex!=nowx){
+      var midx = (prex+nowx)/2;
       //-------------------------------
       ctx[0].strokeStyle='rgb(255,0,0)';
       var d0 = transPos([midx,geomW.w[0][1]], geomW, geomD);
@@ -263,23 +257,50 @@ var procDraw=function(){
 
           ctx[0].strokeStyle='rgb(255,255,255)';
         if(ici>0 && f[ici-1]!=f[ici]){
-          /*stroke
-                     ii
-                    /
-             j1----+----
-                  / 
-             j0--+------
-                /
+          /* find j0 and j1
+          
+                         ii
+                        /
+                 j1----+----
+                      /:
+                     / :
+                    x  :
+                   /:  :
+                  / :  :
+             j0--+---------
+                /:  :  :
+                 c0 :  c1
+                    midx
+                
           */
           var ii = interceptList[ici-1][0];
-          var j0 = xEvList[xi-1][2]!=ii?xEvList[xi-1][2]:xEvList[xi-1][3];
-          var j1 = xEvList[xi  ][2]!=ii?xEvList[xi  ][2]:xEvList[xi  ][3];
-          var cq0 = crossPointLines(inEqList[ii],inEqList[j0]);
-          var cq1 = crossPointLines(inEqList[ii],inEqList[j1]);
-          
+          var c0=[-Infinity,0];
+          var c1=[+Infinity,0];
+          var j0=0,j1=0;
+          for(var xi2=0;xi2<cpList.length;xi2++){
+            if(ii==cpList[xi2][2] || ii==cpList[xi2][3]){
+              // cross point of ii is found
+              var x = cpList[xi2][0];
+              var y = cpList[xi2][1];
+              var j = (ii==cpList[xi2][2]) ? cpList[xi2][2]:cpList[xi2][3];
+              if(x<midx){
+                if(c0[0] < x){
+                  // nearest x is found
+                  c0 = [x,y];
+                  j0  = j;
+                }
+              }else{
+                if(x < c1[0]){
+                  // nearest x is found
+                  c1 = [x,y];
+                  j1  = j;
+                }
+              }
+            }
+          }
           // display coordinate
-          var dq0 = transPos(cq0, geomW, geomD);
-          var dq1 = transPos(cq1, geomW, geomD);
+          var dq0 = transPos(c0, geomW, geomD);
+          var dq1 = transPos(c1, geomW, geomD);
           ctx[0].beginPath();
           ctx[0].moveTo(dq0[0],dq0[1], Math.PI*2, false);
           ctx[0].lineTo(dq1[0],dq1[1], Math.PI*2, false);
@@ -287,32 +308,56 @@ var procDraw=function(){
         }
         prey = nowy;
       }// for(ici) (y)
-      
-      if(xEvList[xi-1][1]=="yaxis"){
-        //if previous is yaxis line
-        //specially add lines
-        for(var ici=0;ici<f.length;ici++){
-          if(f[ici]!=pref[ici]){
-            // display coordinate
-            ctx[0].strokeStyle='rgb(255,255,255)';
-            var ii = xEvList[xi-1][2];
-            var cq0 = cqList[ii][cqiNow[ii]];
-            cqiNow[ii]++;
-            var cq1 = cqList[ii][cqiNow[ii]];
-            var dq0 = transPos(cq0, geomW, geomD);
-            var dq1 = transPos(cq1, geomW, geomD);
-            ctx[0].beginPath();
-            ctx[0].moveTo(dq0[0],dq0[1], Math.PI*2, false);
-            ctx[0].lineTo(dq1[0],dq1[1], Math.PI*2, false);
-            ctx[0].stroke();
+      prediffx = nowx;
+    
+    }else{ // if(prex!=nowx)
+      //prex==nowx (if yaxis line)
+      var midx0 = (prediffx+nowx)/2;
+      var nextdiffx = geomW.w[0][1];
+      for(var xi2=xi+1;xi2<cpList.length;xi2++){
+        if(cpList[xi2][0] > nowx){
+          nextdiffx = cpList[xi2][0];
+        }
+      }
+      var midx1 = (nowx+nextdiffx)/2;
+      var midy = (cpList[xi-1][1]+cpList[xi][1])/2;
+      var f0 = testPoint([midx0, midy],tree);
+      var f1 = testPoint([midx1, midy],tree);
+      if(f0!=f1){
+        var c0=[nowx,-Infinity];
+        var c1=[nowx,+Infinity];
+        var j0=0,j1=0;
+        for(var xi2=0;xi2<cpList.length;xi2++){
+          if(cpList[xi2][0]==nowx){
+            // cross point on x=nowx is found
+            var y = cpList[xi2][1];
+            var j = (nowx==cpList[xi2][0]) ? cpList[xi2][3]:cpList[xi2][2];
+            if(y<midy){
+              if(c0[1] < y){
+                // nearest y is found
+                c0 = [nowx,y];
+                j0  = j;
+              }
+            }else{
+              if(y < c1[1]){
+                // nearest y is found
+                c1 = [nowx,y];
+                j1  = j;
+              }
+            }
           }
-        }// ici
-      }// if yaxis
-      
-      x = xEvList[xi][0];
-      if(xEvList[xi][1]=="yaxis") pref = f.clone();
-    }// for(xi) (x)
-  }//scope
+        }
+        var dq0 = transPos(c0, geomW, geomD);
+        var dq1 = transPos(c1, geomW, geomD);
+        ctx[0].beginPath();
+        ctx[0].moveTo(dq0[0],dq0[1], Math.PI*2, false);
+        ctx[0].lineTo(dq1[0],dq1[1], Math.PI*2, false);
+        ctx[0].stroke();
+      }// f0!=f1
+    }// if yaxis
+    
+    prex = nowx;
+  }// for(xi) (x)
   
 
   ctx[0].strokeStyle='rgb(0,255,0)';
