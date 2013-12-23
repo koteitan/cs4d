@@ -5,7 +5,7 @@
 // static var on game
 var isDebug1=false; //debug flag
 var isDebug2=false; //debug flag
- // for world
+// for world
 var dims = 4;
 var secPframe = 1; // [sec/frame]
 var geomW = new Geom(2, [[-1,-1],[+1,+1]]);
@@ -88,6 +88,7 @@ var initGui=function(){
     ctx[i] = canvas[i].getContext('2d');
   }
   isKeyTyping = false;
+  geomD = new Geom(2, [[0,canvas[0].height],[canvas[0].width,0]]);
 } 
 var procDraw=function(){
   var dx = canvas[0].width;
@@ -103,7 +104,6 @@ var procDraw=function(){
   //border ---------
   ctx[0].lineWidth='1';
   ctx[0].strokeStyle='rgb(255,255,255)';
-  var geomD = new Geom(2, [[0,dy],[dx,0]]);
   
   /* 
   cqList[cqi] = [x, y, i, j] = cross point list
@@ -116,7 +116,7 @@ var procDraw=function(){
     for(var i=0;i<inEqs;i++){
       
       for(var j=0;j<inEqs;j++){
-        var cq = crossPointLines(inEqList[i],inEqList[j]);
+        var cq = crossPoint(inEqList[i],inEqList[j]);
         if(!isNaN(cq[0]) &&  !isNaN(cq[1]) && 
           geomW.w[0][0]<=cq[0] && cq[0]<=geomW.w[1][0] &&
           geomW.w[0][1]<=cq[1] && cq[1]<=geomW.w[1][1]){
@@ -300,13 +300,8 @@ var procDraw=function(){
               }
             }
           }
-          // display coordinate
-          var dq0 = transPos(c0, geomW, geomD);
-          var dq1 = transPos(c1, geomW, geomD);
-          ctx[0].beginPath();
-          ctx[0].moveTo(dq0[0],dq0[1], Math.PI*2, false);
-          ctx[0].lineTo(dq1[0],dq1[1], Math.PI*2, false);
-          ctx[0].stroke();
+          //draw
+          drawBoundary(inEqList[ii],c0,c1);
         }
         prey = nowy;
       }// for(ici) (y)
@@ -315,20 +310,49 @@ var procDraw=function(){
     }else{ // if(prex!=nowx)
       //prex==nowx (if yaxis line)
 
-      /*
+      /*      ii
               b^      
-              { ........ y1
+              { ........ c1
             ^b       
-              b         
+          j1  b         
               b   
               b         
               b^      
-              {......... y0
+              {......... c0
             ^b      
-           
+          j0
       */
 
       if(cqList[cqi-1][1]==cqList[cqi][1]) continue;
+      var ii,j0,j1;
+      if(cqList[cqi-1][2]==cqList[cqi][2]){
+        ii = cqList[cqi-1][2];
+        j0 = cqList[cqi-1][3];
+        ii = cqList[cqi  ][2];
+        j1 = cqList[cqi  ][3];
+      }
+      if(cqList[cqi-1][2]==cqList[cqi][3]){
+        ii = cqList[cqi-1][2];
+        j0 = cqList[cqi-1][3];
+        j1 = cqList[cqi  ][2];
+        ii = cqList[cqi  ][3];
+      }
+      if(cqList[cqi-1][3]==cqList[cqi][2]){
+        j0 = cqList[cqi-1][2];
+        ii = cqList[cqi-1][3];
+        ii = cqList[cqi  ][2];
+        j1 = cqList[cqi  ][3];
+      }
+      if(cqList[cqi-1][3]==cqList[cqi][3]){
+        j0 = cqList[cqi-1][2];
+        ii = cqList[cqi-1][3];
+        j1 = cqList[cqi  ][2];
+        ii = cqList[cqi  ][3];
+      }
+      
+      var c0=crossPoint(inEqList[ii], inEqList[j0]);
+      var c1=crossPoint(inEqList[ii], inEqList[j1]);
+      
       var midx0 = (prediffx+nowx)/2;
       var nextdiffx = geomW.w[0][1];
       for(var cqi2=cqi+1;cqi2<cqList.length;cqi2++){
@@ -338,40 +362,11 @@ var procDraw=function(){
         }
       }
       var midx1 = (nowx+nextdiffx)/2;
-      
-      var c0=[nowx, cqList[cqi-1][1]];
-      var c1=[nowx, cqList[cqi  ][1]];
       var midy = (c0[1]+c1[1])/2;
       var f0 = testPoint([midx0, midy],tree);
       var f1 = testPoint([midx1, midy],tree);
       if(f0!=f1){
-        var j0=0,j1=0;
-        for(var cqi2=0;cqi2<cqList.length;cqi2++){
-          if(cqList[cqi2][0]==nowx){
-            // cross point on x=nowx is found
-            var y = cqList[cqi2][1];
-            var j = (nowx==cqList[cqi2][0]) ? cqList[cqi2][3]:cqList[cqi2][2];
-            if(y<midy){
-              if(c0[1] < y){
-                // nearest y is found
-                c0 = [nowx,y];
-                j0  = j;
-              }
-            }else{
-              if(y < c1[1]){
-                // nearest y is found
-                c1 = [nowx,y];
-                j1  = j;
-              }
-            }
-          }
-        }
-        var dq0 = transPos(c0, geomW, geomD);
-        var dq1 = transPos(c1, geomW, geomD);
-        ctx[0].beginPath();
-        ctx[0].moveTo(dq0[0],dq0[1], Math.PI*2, false);
-        ctx[0].lineTo(dq1[0],dq1[1], Math.PI*2, false);
-        ctx[0].stroke();
+        drawBoundary(inEqList[ii], c0, c1);
       }// f0!=f1
     }// if yaxis
     
@@ -440,11 +435,24 @@ var print=function(str){
   out:
    [x,y]
 */
-var crossPointLines = function(l0, l1){
+var crossPoint = function(l0, l1){
   return mulxv(
       inv([[l0[1],l0[2]],[l1[1],l1[2]]]),
       [-l0[0],-l1[0]]
     );
+}
+var drawBoundary = function(ineq, c0, c1){
+  if(ineq[3]==0 && ineq[4]==0 && ineq[5]==0){
+    //1st order
+    var dq0 = transPos(c0, geomW, geomD);
+    var dq1 = transPos(c1, geomW, geomD);
+    ctx[0].beginPath();
+    ctx[0].moveTo(dq0[0],dq0[1], Math.PI*2, false);
+    ctx[0].lineTo(dq1[0],dq1[1], Math.PI*2, false);
+    ctx[0].stroke();
+  }else{
+    //2nd
+  }
 }
 
 // entry --------------------------------------
