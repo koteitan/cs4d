@@ -26,8 +26,8 @@ var OPN_OR  = 8; /* union of p0 ... pN */
 var inEqList = [
 //        0   1   2    3   4   5   6
 //        A  +Bx +Cy  +Dxx+Exy+Fyy <> 0
-  [ -(  0 ),  1,  0,  0,  0,  0,  +1],
-  [ -(0.5 ),  1,  0,  0,  0,  0,  -1],
+  [ -(  0 ),  1,  0.3,  0,  0,  0,  +1],
+  [ -(0.5 ),  1,  0.6,  0,  0,  0,  -1],
   [ -(0.25),  0,  1,  0,  0,  0,  +1],
   [ -(0.75),  0,  1,  0,  0,  0,  -1],
 ];
@@ -82,13 +82,15 @@ var procDraw=function(){
   var geomD = new Geom(2, [[0,dy],[dx,0]]);
   
   /* 
-  xEvList[xi] = [x, type] 
-   : the xi th least x in which some event occur.
-     type = {"cross","yaxis","wall"}
+  xEvList[xi] = [x, type, i, j] = x-event.
+    x    = point of the event is occur. (sorted as less x with less xi.)
+    type = type of event {"cross","yaxis","wall"}
+    i,j  = indices of inequalities that cross.
+    
   cqList[i][j] = [cx, cy]
    : the cross point with j th least x of ith inequality.
   */
-  var xEvList = [[geomW.w[0][0],"wall"], [geomW.w[1][0],"wall"]];
+  var xEvList = [[geomW.w[0][0],"wall",-1,-1], [geomW.w[1][0],"wall",-1,-1]];
   var cqList = new Array(inEqs);
   {
     var xi = 0;
@@ -110,7 +112,7 @@ var procDraw=function(){
           if(i<j && inEqList[i][2]!=0 && inEqList[j][2]!=0){
             // i is normal line, j is not yaxis line and i<j
             // add cross point into x-events
-            xEvList[xEvList.length] = [cq[0],"cross"];
+            xEvList[xEvList.length] = [cq[0],"cross",i,j];
           }
 
         }
@@ -131,7 +133,7 @@ var procDraw=function(){
     // make x-events for yaxis-type-lines
     for(var i=0;i<inEqs;i++){
       if(inEqList[i][2]==0){
-        xEvList[xEvList.length] = [-inEqList[i][0]/inEqList[i][1], "yaxis", i];
+        xEvList[xEvList.length] = [-inEqList[i][0]/inEqList[i][1], "yaxis", i, -1];
       }
     }//i
     
@@ -229,12 +231,12 @@ var procDraw=function(){
         }
       }
       interceptList.sort(function(a,b){return a[1]-b[1];});
-      var f = new Array(interceptList.length);
+      var f = new Array(interceptList.length+1);
       var prey = geomW.w[0][1];
       for(var ici=0;ici<interceptList.length+1;ici++){ //for y
         var nowy;
         if(ici<interceptList.length){
-          nowy = interceptList[ici][1];
+          nowy = [interceptList[ici][1], geomW.w[1][1]].min();
         }else{
           nowy = geomW.w[1][1];
         }
@@ -261,11 +263,19 @@ var procDraw=function(){
 
           ctx[0].strokeStyle='rgb(255,255,255)';
         if(ici>0 && f[ici-1]!=f[ici]){
-          //stroke
+          /*stroke
+                     ii
+                    /
+             j1----+----
+                  / 
+             j0--+------
+                /
+          */
           var ii = interceptList[ici-1][0];
-          var cq0 = cqList[ii][cqiNow[ii]];
-          if(cq0[0] < midx) cqiNow[ii]++;
-          var cq1 = cqList[ii][cqiNow[ii]];
+          var j0 = xEvList[xi-1][2]!=ii?xEvList[xi-1][2]:xEvList[xi-1][3];
+          var j1 = xEvList[xi  ][2]!=ii?xEvList[xi  ][2]:xEvList[xi  ][3];
+          var cq0 = crossPointLines(inEqList[ii],inEqList[j0]);
+          var cq1 = crossPointLines(inEqList[ii],inEqList[j1]);
           
           // display coordinate
           var dq0 = transPos(cq0, geomW, geomD);
@@ -279,7 +289,8 @@ var procDraw=function(){
       }// for(ici) (y)
       
       if(xEvList[xi-1][1]=="yaxis"){
-        //previous is yaxis line
+        //if previous is yaxis line
+        //specially add lines
         for(var ici=0;ici<f.length;ici++){
           if(f[ici]!=pref[ici]){
             // display coordinate
