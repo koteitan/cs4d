@@ -47,3 +47,48 @@ Array.prototype.clone = function(){
   }
   return ret;
 }
+
+Array.prototype.isEqual = function(a){
+  if(this.length!=a.length) return false;
+  for(var i=0;i<this.length;i++){
+    if(this[i] instanceof Array){
+      if(!(a[i] instanceof Array)) return false;
+      if(!this[i].isEqual(a[i])) return false;
+    }else{
+      if(this[i]!=a[i]) return false;
+    }
+  }
+  return true;
+}
+/* -----------------------------------------
+  push uniquely
+  i = a.pushUniquely(e);
+    if e is already member of a:
+      push e into a if e is not member of a,
+      and return the index of e in new a.
+    else
+      and return the index of e in a.
+  usage:
+      x=[2,3,4];
+      i=x.pushUniquely(10);
+      // x = [2,3,4,10];
+      // i = 3;
+      
+      x=[2,3,4];
+      i=x.pushUniquely(3);
+      // x = [2,3,4];
+      // i = 1;
+-------------------------------------------- */
+Array.prototype.pushUniquely = function(e){
+  for(var i=0;i<this.length;i++){
+    var ae = this[i];
+    if(ae instanceof Array && e instanceof Array){
+      if(ae.isEqual(e)) return i;
+    }else{
+      if(ae==e) return i;
+    }
+  }
+  return this.push(e)-1;
+}
+
+
