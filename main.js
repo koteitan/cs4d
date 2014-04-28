@@ -41,7 +41,7 @@ InequalityPolytope
 var InequalityPolytope = function(){
   if(arguments.length==2 && arguments[0] instanceof Array){
     /* matrix notation */
-    this.type   = "inequality";
+    this.type   = "matrix";
     this.matrix = _InequalityPolytope_boundaryList.pushUniquely(arguments[0]);
     this.sign   = arguments[1];
     return;
@@ -91,6 +91,21 @@ InequalityPolytope.prototype.toString = function(){
     return out + " = 0";
   }
 }
+/* test the equation "this" at point q.
+  q = [x,y,z,w,1].
+  return value = true / false
+  ex. 
+  new InequalityPolytope(
+    [[0,0,0,0,1],
+     [0,0,0,0,2],
+     [0,0,0,0,3],
+     [0,0,0,0,4],
+     [1,2,3,4,0]],+1).test([5,6,7,8,1])
+  returns true because
+    2x+4y+6z+8w>0 at (x,y,z,w)==(5,6,7,8)
+    == 10+24+42+64>0 
+    == true
+*/
 InequalityPolytope.prototype.test = function(q){
   switch(this.type){
     case "matrix":
@@ -163,7 +178,10 @@ var isKeyTyping;
 //initialize -----------
 //body
 var initBody=function(){
+/*
   var innersphere = new InequalityPolytope([[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,-(21/54)*(21/54)]],-1);
+  */
+  var ip0 = new InequalityPolytope(
 };
 //gui
 var initGui=function(){
