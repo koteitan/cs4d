@@ -1,5 +1,5 @@
 /*----------------------------------
-  4dsoko_main.js
+  main.js
   main program and entry point
 ----------------------------------*/
 // static var on game
@@ -10,6 +10,114 @@ var dims = 4;
 var secPframe = 1; // [sec/frame]
 var geomW = new Geom(2, [[-1,-1],[+1,+1]]);
 var geomD;
+
+/* hidden list of the InequalityPolytope */ 
+var _InequalityPolytope_boundaryList = [];
+
+/* -----------------------------------------------
+InequalityPolytope
+  indicates 4D-polytope which is described by inequality.
+  the function has 3 types of constructor;
+    InequalityPolytope(matrix, sign),
+    InequalityPolytope(operator, param),
+    InequalityPolytope(value).
+  
+    InequalityPolytope(matrix, sign)
+      matrix = S = 5x5 2D array 
+             = matrix of coefficients of inequality;
+        sign == +1
+          [x,y,z,w,1]S[x,y,z,w,1]^T > 0
+        sign == -1
+          [x,y,z,w,1]S[x,y,z,w,1]^T < 0
+        
+    InequalityPolytope(operator, param);
+      operator;
+        InequalityPolytope("!" ,[a          ]) = invert of a.
+        InequalityPolytope("|" ,[a0,a1,c,ak]) = union.
+        InequalityPolytope("&" ,[a0,a1,c,ak]) = intersection.
+        InequalityPolytope("^" ,[a0,a1,c,ak]) = xor
+      param = array of parameters
+  -----------------------------------------------*/
+var InequalityPolytope = function(){
+  if(arguments.length==2 && arguments[0] instanceof Array){
+    /* matrix notation */
+    this.type   = "inequality";
+    this.matrix = _InequalityPolytope_boundaryList.pushUniquely(arguments[0]);
+    this.sign   = arguments[1];
+    return;
+  }else if(arguments.length==1 && arguments[0].constructor==Boolean){
+    /* boolean notation */
+    this.type   = "boolean";
+    this.value  = arguments[0];
+  }else if(arguments.length==3 && arguments[0] instanceof String){
+    /* string notation */
+    this.type   = "operator";
+    this.operator = arguments[0];
+    this.param = new Array(arguments.length-1);
+    for(var i=0;i<this.param.length;i++){
+      this.param[i] = arguments[i+1];
+    }
+  }
+}
+InequalityPolytope.prototype.toString = function(){
+  switch(this.type){
+    case "boolean":
+    return this.value;
+    case "matrix":
+      var varstr="xyzw";
+      var out="";
+      for(var i=0;i<this.matrix.length;i++){
+        for(var j=i;j<this.matrix[i].length;j++){
+          var value = i==j ? this.matrix[i][j]:this.matrix[i][j]+this.matrix[j][i];
+          if(value==0){
+            continue;
+          }else if(Math.floor(value)==value){
+            out += sprintf("%+d",value);
+          }else{
+            out += sprintf("%+3.3f",value);
+          }
+          if(i<this.matrix.length-1){
+            out += varstr[i];
+          }
+          if(j<this.matrix.length-1){
+            if(i==j){
+              out += "^2";
+            }else{
+              out += varstr[j];
+            }
+          }
+        }
+      }
+    return out + " = 0";
+  }
+}
+InequalityPolytope.prototype.test = function(q){
+  switch(this.type){
+    case "matrix":
+      return product(q, mul(this.matrix, q)) * this.sign > 0;
+    case "boolean":
+      return this.value;
+    case "operator":
+      switch(this.operator){
+        case "!":
+        return !b;
+        case "|":
+          var b = this.param[0].test(q);
+          for(var i=1;i<this.param.length;i++) b |= this.param[i].test(q);
+        return b;
+        case "&":
+          var b = this.param[0].test(q);
+          for(var i=1;i<this.param.length;i++) b &= this.param[i].test(q);
+        return b;
+        case "^":
+          var b = this.param[0].test(q);
+          for(var i=1;i<this.param.length;i++) b ^= this.param[i].test(q);
+        default:
+        return false;
+      }
+  }
+};
+
 /* inequalities operator 
  [OP,p0,p1] */
 var OP1_IMM = 0; /* immediate value p0 */
@@ -23,49 +131,22 @@ var OPN_AND = 7; /* intersection of p0 ... pN */
 var OPN_OR  = 8; /* union of p0 ... pN */
 
  // for game
-var inEqList = [
-  [ -(geomW.w[0][0]),  1,  0,  0,  0,  0,  +1],
-  [ -(geomW.w[1][0]),  1,  0,  0,  0,  0,  -1],
-  [ -(geomW.w[0][1]),  0,  1,  0,  0,  0,  +1],
-  [ -(geomW.w[1][1]),  0,  1,  0,  0,  0,  -1],
-//        0   1   2    3   4   5   6
-//        A  +Bx +Cy  +Dxx+Exy+Fyy <> 0
-  [ -( 0.25),   0,  1, 0,  0,  0,  +1],
-  [ -( 0.75),   0,  1, 0,  0,  0,  -1],
-  [ -( 0.25),   1,  0, 0,  0,  0,  +1],
-  [ -( 0.75),   1,  0, 0,  0,  0,  -1],
-  [ -( 0.25),   0,  1, 0,  0,  0,  +1],
-  [ -( 0.75),   0,  1, 0,  0,  0,  -1],
-  [ -(-0.75),   1,  0, 0,  0,  0,  +1],
-  [ -(-0.25),   1,  0, 0,  0,  0,  -1],
-];
-var tw = [OPN_AND, 
-  [OP1_IMM, inEqList[0]],
-  [OP1_IMM, inEqList[1]],
-  [OP1_IMM, inEqList[2]],
-  [OP1_IMM, inEqList[3]]
-];
-var t0 = [OPN_AND, 
-  [OP1_IMM, inEqList[4]],
-  [OP1_IMM, inEqList[5]],
-  [OP1_IMM, inEqList[6]],
-  [OP1_IMM, inEqList[7]]
-];
-var t1 = [OPN_AND, 
-  [OP1_IMM, inEqList[8]],
-  [OP1_IMM, inEqList[9]],
-  [OP1_IMM, inEqList[10]],
-  [OP1_IMM, inEqList[11]]
-];
-var t01 =  [OPN_OR, t0, t1];
-var tree = [OPN_AND, t01, tw];
-
+var inEqList = [];
 var inEqs = inEqList.length;
 // dinamic var on game
 var timenow=0;
+
+
+var CrossPoint = function(l0, l1){
+  this.cq = mulxv(
+    inv([[l0[1],l0[2]],[l1[1],l1[2]]]),
+    [-l0[0],-l1[0]]
+  );
+}
 //ENTRY POINT --------------------------
 window.onload=function(){
-  initGui();
+//  initGui();
+  initBody();
 //  setInterval(procAll, 1000/frameRate); // main loop
 }
 //MAIN LOOP ------------------------
@@ -80,6 +161,10 @@ var frameRate;
 frameRate  = 60; // [fps]
 var isKeyTyping;
 //initialize -----------
+//body
+var initBody=function(){
+  var innersphere = new InequalityPolytope([[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,-(21/54)*(21/54)]],-1);
+};
 //gui
 var initGui=function(){
   for(var i=0;i<1;i++){
@@ -435,12 +520,6 @@ var print=function(str){
   out:
    [x,y]
 */
-var crossPoint = function(l0, l1){
-  return mulxv(
-      inv([[l0[1],l0[2]],[l1[1],l1[2]]]),
-      [-l0[0],-l1[0]]
-    );
-}
 var drawBoundary = function(ineq, c0, c1){
   if(ineq[3]==0 && ineq[4]==0 && ineq[5]==0){
     //1st order
@@ -454,12 +533,3 @@ var drawBoundary = function(ineq, c0, c1){
     //2nd
   }
 }
-
-// entry --------------------------------------
-window.onload=function(){
-  initGui();
-  procAll();
-//  setInterval(procAll, 1000/frameRate);
-};
-
-
