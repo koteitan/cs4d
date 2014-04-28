@@ -62,6 +62,13 @@ InequalityPolytope.prototype.toString = function(){
   switch(this.type){
     case "boolean":
     return this.value;
+    case "operator":
+      var out = "";
+      for(var i=0;i<this.param.length;i++){
+        out += "(" + this.param[i].toString() + ")";
+        if(i<this.param.length-1) out += this.operator;
+      }
+    return out;
     case "matrix":
       var varstr="xyzw";
       var matrix;
@@ -76,11 +83,18 @@ InequalityPolytope.prototype.toString = function(){
           var value = i==j ? this.matrix[i][j]:this.matrix[i][j]+this.matrix[j][i];
           if(value==0){
             continue;
+          }else if(value==+1 
+            && (i<this.matrix.length-1 || j<this.matrix.length-1)){
+            out += sprintf("+",value);
+          }else if(value==-1 
+            && (i<this.matrix.length-1 || j<this.matrix.length-1)){
+            out += sprintf("-",value);
           }else if(Math.floor(value)==value){
             out += sprintf("%+d",value);
           }else{
             out += sprintf("%+3.3f",value);
           }
+          
           if(i<this.matrix.length-1){
             out += varstr[i];
           }
@@ -93,7 +107,7 @@ InequalityPolytope.prototype.toString = function(){
           }
         }
       }
-    return out + " = 0";
+    return out + (this.sign?">":"<") + "0";
   }
 }
 /* test the equation "this" at point q.
@@ -269,7 +283,16 @@ var initBody=function(){
     [0,  0  , 0.5],
     [0,  0  , 0.5],
     [0.5,0.5,-0.5]],-1);
-  iproot = new InequalityPolytope("&",[ip0,ip1,ip2]);
+  ip3 = new InequalityPolytope("&",[ip0,ip1,ip2]);
+  
+  /* add display boundaries */
+  wip = new InequalityPolytope("&",[
+    new InequalityPolytope([[0,0,1/2],[0,0,0],[1/2,0,+1]],+1),
+    new InequalityPolytope([[0,0,1/2],[0,0,0],[1/2,0,-1]],-1),
+    new InequalityPolytope([[0,0,0],[0,0,1/2],[0,1/2,+1]],+1),
+    new InequalityPolytope([[0,0,0],[0,0,1/2],[0,1/2,-1]],-1)
+  ]);
+  iproot = new InequalityPolytope("&",[ip3,wip]);
 };
 //gui
 var initGui=function(){
@@ -295,8 +318,9 @@ var procDraw=function(){
   //border ---------
   ctx[0].lineWidth='1';
   ctx[0].strokeStyle='rgb(255,255,255)';
-
-  cplist = iproot.listCrossPoints();  
+  
+  cplist = iproot.listCrossPoints();
+  //seglist = iproot.listSegments();
 
   // draw all cross points [BLUE] ------------
   var radius = 4;
