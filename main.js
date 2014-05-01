@@ -185,13 +185,14 @@ InequalityPolytope.prototype.listInequalities = function(eqlist){
     cplist[cqi] = [x, y, i, j] 
                 = cross point list of the tree
                   with this object as root.
-      x,y  = cross point
-      i,j  = indices of inequalities that cross.
+      x,y  = point of cross 
+      i,j  = inequalities associated cross
 ---------------------------------------------- */
 InequalityPolytope.prototype.listCrossPoints = function(){
   // list inequalities
   var eqlist = this.listInequalities([]);
   var eqs = eqlist.length;
+  var cplist = new Array(eqs);
   
   var crossPoint = function(eq0, eq1){
     if(eq0.length == 3 && eq0[0][0]==0 && eq0[1][1]==0 &&
@@ -218,31 +219,74 @@ InequalityPolytope.prototype.listCrossPoints = function(){
     
   }
   
-  // find all cross point in display
-  var cplist = [];
-  for(var i=0;i<eqs;i++){
-    for(var j=i+1;j<eqs;j++){
-      var cq = crossPoint(eqlist[i],eqlist[j]);
+  for(var e=0;e<eqs;e++){
+    cplist[e]=[];
+    
+    // find all cross point in display for line i
+    for(var j=e+1;j<eqs;j++){
+      var cq = crossPoint(eqlist[e],eqlist[j]);
       if(cq.length==2 && 
         geomW.w[0][0]<=cq[0] && cq[0]<=geomW.w[1][0] &&
         geomW.w[0][1]<=cq[1] && cq[1]<=geomW.w[1][1]){
-        // if in display
-        cplist.push([cq[0],cq[1],i,j]);
+        // if within display
+        cplist[e].push([cq[0], cq[1], eqlist[e]]);
       }
     }// for j
+    
+    // sort corss points
+    if(eqlist[e].length == 3 && eqlist[e][0][0]==0 
+                             && eqlist[e][1][1]==0){
+      //line
+      if(eqlist[e][1][0]!=0){
+        // oblique line
+        cplist.sort(function(a,b){return a[0]-b[0];});
+      }else{
+        // vertical line
+        cplist.sort(function(a,b){return a[1]-b[1];});
+      }
+    }else{
+      // conic line
+      /*         (a,b,c  (x
+         (x,y,1)  d,e,f   y
+                  g,h,i)  1)
+      = ax^2 + ey^2 + (b+d)xy + (c+g)x + (f+h)y + i = 0
+      = m[0][0]x^2 + m[1][1]y^2 + m[2][2] + 
+      + (m[0][1]+m[1][0])xy 
+      + (m[0][2]+m[2][0])x 
+      + (m[1][2]+m[2][1])y  = f = 0
+      df/dy = 2m[1][1]y + (m[0][1]+m[1][0])x + m[1][2]+m[2][1]
+      df/dx = 2m[0][0]x + (m[0][1]+m[1][0])y + m[0][2]+m[2][0]
+      */
+        cplist.sort(function(a,b){
+          var am = a[2];
+          var bm = b[2];
+          return Math.atan2(
+            (am[0][0]+am[0][0])*a[0]
+           +(am[1][2]+am[2][1])*a[1]
+           +(am[0][2]+am[2][0])     ,
+            (am[1][1]+am[1][1])*a[1]
+           +(am[0][2]+am[2][0])*a[0]
+           +(am[1][2]+am[2][1])
+           )     -Math.atan2(
+            (bm[0][0]+bm[0][0])*b[0]
+           +(bm[1][2]+bm[2][1])*b[1]
+           +(bm[0][2]+bm[2][0])     ,
+            (bm[1][1]+bm[1][1])*b[1]
+           +(bm[0][2]+bm[2][0])*b[0]
+           +(bm[1][2]+bm[2][1])
+          );
+        });
+    }
   }//i
     
-  // sort corss points
-  cplist.sort(function(a,b){// lines only
-    if(a[0]==b[0]){
-      return a[1]-b[1]
-    }else{
-      return a[0]-b[0]
-    }
-  });
   return cplist;
 }
-
+InequalityPolytope.prototype.listSegments = function(cplist){
+  for(var i=0;i<cplist;i++){
+    cplist[i];
+  }
+  return seglist;
+}
 // dinamic var on game
 var timenow=0;
 
@@ -320,7 +364,7 @@ var procDraw=function(){
   ctx[0].strokeStyle='rgb(255,255,255)';
   
   cplist = iproot.listCrossPoints();
-  //seglist = iproot.listSegments();
+  seglist = iproot.listSegments();
 
   // draw all cross points [BLUE] ------------
   var radius = 4;
@@ -346,11 +390,13 @@ var procDraw=function(){
   }
   // draw all cross points [GREEN] ------------
   ctx[0].strokeStyle='rgb(0,255,0)';
-  for(var cqi=0;cqi<cplist.length;cqi++){
-    var d = transPos([cplist[cqi][0],cplist[cqi][1]], geomW, geomD);
-    ctx[0].beginPath();
-    ctx[0].arc(d[0], d[1], radius, 0, Math.PI*2, false);
-    ctx[0].stroke();
+  for(var e=0;e<cplist.length;e++){
+    for(var c=0;c<cplist[e].length;c++){
+      var d = transPos([cplist[e][c][0],cplist[e][c][1]], geomW, geomD);
+      ctx[0].beginPath();
+      ctx[0].arc(d[0], d[1], radius, 0, Math.PI*2, false);
+      ctx[0].stroke();
+    }
   }
   
 };
