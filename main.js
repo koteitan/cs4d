@@ -425,3 +425,4 @@ var drawBoundary = function(ineq, c0, c1){
     //2nd
   }
 }
+//  http://members.jcom.home.ne.jp/dslender/math/2jibunrui.pdf
