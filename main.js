@@ -3,18 +3,12 @@
   main program and entry point
 ----------------------------------*/
 // static var on game
-var isDebug1=false; //debug flag
-var isDebug2=false; //debug flag
 // for world
 var dims = 4;
 var secPframe = 1; // [sec/frame]
 var geomW = new Geom(2, [[-1,-1],[+1,+1]]);
 var geomD;
 
-/* list of the InequalityPolytope */ 
-var ineqlist = [];
-var cplist   = [];
-var seglist  = [];
 /* -----------------------------------------------
 InequalityPolytope
   indicates 4D-polytope which is described by inequality.
@@ -24,7 +18,7 @@ InequalityPolytope
     InequalityPolytope(value          ).
   
     InequalityPolytope(matrix, sign)
-      matrix = S = 5x5 2D array 
+      matrix = S = (dim+1)x(dim+1) 2D array 
              = matrix of coefficients of inequality;
         sign == +1
           [x,y,z,w,1]S[x,y,z,w,1]^T > 0
@@ -57,7 +51,7 @@ var InequalityPolytope = function(){
     this.operator = arguments[0];
     this.param = arguments[1];
   }
-}
+};
 InequalityPolytope.prototype.toString = function(){
   switch(this.type){
     case "boolean":
@@ -158,6 +152,49 @@ InequalityPolytope.prototype.test = function(q){
     return;
   }
 };
+/* test with replacing boundaryMatrix with assumption. 
+  q             : 1D array. test point.
+  boundaryMatrix: 2D array. indicating test boundary 
+  assumption    : boolean
+  see InequalityPolytope.prototype.test().
+*/
+InequalityPolytope.prototype.testReplacedBoundary = function(q, boundaryMatrix, assumption){
+  switch(this.type){
+    case "matrix":
+      var m;
+      if(this.matrix[0] instanceof Array){
+        m = this.matrix;
+      }else{
+        m = this.ineqlist[this.matrix];
+      }
+      if(m.isEqual(boundaryMatrix)){
+        return assumption;
+      }else{
+        return product(q, mul(m, q)) * this.sign > 0;
+      }
+    case "boolean":
+      return this.value;
+    case "operator":
+      switch(this.operator){
+        case "!":
+        return !b;
+        case "|":
+          var b = this.param[0].test(q);
+          for(var i=1;i<this.param.length;i++) b = b || this.param[i].testReplacedBoundary(q,boundary,assumption);
+        return b;
+        case "&":
+          var b = this.param[0].test(q);
+          for(var i=1;i<this.param.length;i++) b = b && this.param[i].testReplacedBoundary(q,boundary,assumption);
+        return b;
+        case "^":
+          var b = this.param[0].test(q) | 0;
+          for(var i=1;i<this.param.length;i++) b ^= this.param[i].testReplacedBoundary(q,boundary,assumption);
+        default:
+        return b==1;
+      }
+    return;
+  }
+};
 
 /* list unique inequalities -------------------
   eqlist = all inequalities
@@ -182,17 +219,14 @@ InequalityPolytope.prototype.listInequalities = function(eqlist){
 }
 /* list cross points ----------------------------
   returns:
-    cplist[cqi] = [x, y, i, j] 
-                = cross point list of the tree
-                  with this object as root.
-      x,y  = point of cross 
-      i,j  = inequalities associated cross
+    cplist[ei] = [x, y, e] 
+               = eqlist[ei] and e are crossing
+                 on each other at (x,y) 
 ---------------------------------------------- */
 InequalityPolytope.prototype.listCrossPoints = function(){
   // list inequalities
-  var eqlist = this.listInequalities([]);
-  var eqs = eqlist.length;
-  var cplist = new Array(eqs);
+  this.eqlist = this.listInequalities([]);
+  this.cplist = new Array(this.eqlist.length);
   
   var crossPoint = function(eq0, eq1){
     if(eq0.length == 3 && eq0[0][0]==0 && eq0[1][1]==0 &&
@@ -216,33 +250,31 @@ InequalityPolytope.prototype.listCrossPoints = function(){
       //2d lines only
       return [];
     }
-    
-  }
+  }// crossPoint()
   
-  for(var e=0;e<eqs;e++){
-    cplist[e]=[];
-    
+  for(var i=0;i<this.eqlist.length;i++){
+    this.cplist[i]=[];
+    var e=this.eqlist[i];
     // find all cross point in display for line i
-    for(var j=e+1;j<eqs;j++){
-      var cq = crossPoint(eqlist[e],eqlist[j]);
+    for(var j=i+1;j<this.eqlist.length;j++){
+      var cq = crossPoint(e, this.eqlist[j]);
       if(cq.length==2 && 
         geomW.w[0][0]<=cq[0] && cq[0]<=geomW.w[1][0] &&
         geomW.w[0][1]<=cq[1] && cq[1]<=geomW.w[1][1]){
         // if within display
-        cplist[e].push([cq[0], cq[1], eqlist[e]]);
+        this.cplist[i].push([cq[0], cq[1], e]);
       }
     }// for j
     
     // sort corss points
-    if(eqlist[e].length == 3 && eqlist[e][0][0]==0 
-                             && eqlist[e][1][1]==0){
+    if(e.length == 3 && e[0][0]==0 && e[1][1]==0){
       //line
-      if(eqlist[e][1][0]!=0){
+      if(e[1][0]!=0){
         // oblique line
-        cplist.sort(function(a,b){return a[0]-b[0];});
+        this.cplist.sort(function(a,b){return a[0]-b[0];});
       }else{
         // vertical line
-        cplist.sort(function(a,b){return a[1]-b[1];});
+        this.cplist.sort(function(a,b){return a[1]-b[1];});
       }
     }else{
       // conic line
@@ -257,39 +289,87 @@ InequalityPolytope.prototype.listCrossPoints = function(){
       df/dy = 2m[1][1]y + (m[0][1]+m[1][0])x + m[1][2]+m[2][1]
       df/dx = 2m[0][0]x + (m[0][1]+m[1][0])y + m[0][2]+m[2][0]
       */
-        cplist.sort(function(a,b){
-          var am = a[2];
-          var bm = b[2];
-          return Math.atan2(
-            (am[0][0]+am[0][0])*a[0]
-           +(am[1][2]+am[2][1])*a[1]
-           +(am[0][2]+am[2][0])     ,
-            (am[1][1]+am[1][1])*a[1]
-           +(am[0][2]+am[2][0])*a[0]
-           +(am[1][2]+am[2][1])
-           )     -Math.atan2(
-            (bm[0][0]+bm[0][0])*b[0]
-           +(bm[1][2]+bm[2][1])*b[1]
-           +(bm[0][2]+bm[2][0])     ,
-            (bm[1][1]+bm[1][1])*b[1]
-           +(bm[0][2]+bm[2][0])*b[0]
-           +(bm[1][2]+bm[2][1])
-          );
-        });
-    }
+      this.cplist.sort(function(a,b){
+        var am = a[2];
+        var bm = b[2];
+        return Math.atan2(
+          (am[0][0]+am[0][0])*a[0]
+         +(am[1][2]+am[2][1])*a[1]
+         +(am[0][2]+am[2][0])     ,
+          (am[1][1]+am[1][1])*a[1]
+         +(am[0][2]+am[2][0])*a[0]
+         +(am[1][2]+am[2][1])
+         )     -Math.atan2(
+          (bm[0][0]+bm[0][0])*b[0]
+         +(bm[1][2]+bm[2][1])*b[1]
+         +(bm[0][2]+bm[2][0])     ,
+          (bm[1][1]+bm[1][1])*b[1]
+         +(bm[0][2]+bm[2][0])*b[0]
+         +(bm[1][2]+bm[2][1])
+        );
+      });//sort
+    }//else
   }//i
-    
-  return cplist;
 }
-InequalityPolytope.prototype.listSegments = function(cplist){
-  for(var i=0;i<cplist;i++){
-    cplist[i];
+InequalityPolytope.prototype.listSegments = function(){
+  this.seglist = [];
+  for(var ei=0;ei<this.cplist.length;ei++){
+    var cl = this.cplist[ei];
+    var me = this.eqlist[ei];
+    var D  = 1/10000;
+    for(var ci=0;ci<cl.length-1;ci++){
+      /* make test point */
+      if(1){
+        var m = [(cl[ci+0][0]+cl[ci+1][0])/2, 
+                 (cl[ci+0][1]+cl[ci+1][1])/2];
+        debug.addItem({
+          strokeStyle:"yellow",
+          type:"circle", 
+          c   :transPos(m, geomW, geomD), 
+          r   :10});
+        debug.addItem({
+          fillStyle:"yellow",
+          type:"text",
+          text:"(ei="+ei+" ci="+ci+")",
+          p   :transPos(m, geomW, geomD)});
+        if(this.testReplacedBoundary(m, me, true) 
+        != this.testReplacedBoundary(m, me, false)){
+          var s = new Segment({
+            type:"line", 
+            p0  :cl[ci+0], 
+            p1  :cl[ci+0]
+          });
+          this.seglist.push(s);
+        }
+      }else{
+      }
+    }//ci
+  }//ei
+}
+InequalityPolytope.prototype.draw = function(ctx){
+  for(var si=0;si<this.seglist.length;si++){
+    this.seglist[si].draw(ctx);
   }
-  return seglist;
 }
+var Segment = function(param){
+  this.param = param;
+  switch(this.param.type){
+    case "line":
+    this.draw = function(ctx){
+      ctx.beginPath();
+      ctx.moveTo(this.param.p[0][0],this.param.p[0][1]);
+      ctx.lineTo(this.param.p[1][0],this.param.p[1][1]);
+      ctx.stroke();
+    };
+    break;
+    default:
+    break;
+  }
+}
+
 // dinamic var on game
 var timenow=0;
-
+var debug = new Debug();
 
 //ENTRY POINT --------------------------
 window.onload=function(){
@@ -337,6 +417,8 @@ var initBody=function(){
     new InequalityPolytope([[0,0,0],[0,0,1/2],[0,1/2,-1]],-1)
   ]);
   iproot = new InequalityPolytope("&",[ip3,wip]);
+  iproot.listCrossPoints();
+  iproot.listSegments();
 };
 //gui
 var initGui=function(){
@@ -363,9 +445,8 @@ var procDraw=function(){
   ctx[0].lineWidth='1';
   ctx[0].strokeStyle='rgb(255,255,255)';
   
-  cplist = iproot.listCrossPoints();
-  seglist = iproot.listSegments();
-
+  iproot.draw();
+  
   // draw all cross points [BLUE] ------------
   var radius = 4;
   ctx[0].strokeStyle='rgb(0,0,255)';
@@ -390,15 +471,15 @@ var procDraw=function(){
   }
   // draw all cross points [GREEN] ------------
   ctx[0].strokeStyle='rgb(0,255,0)';
-  for(var e=0;e<cplist.length;e++){
-    for(var c=0;c<cplist[e].length;c++){
-      var d = transPos([cplist[e][c][0],cplist[e][c][1]], geomW, geomD);
+  for(var e=0;e<iproot.cplist.length;e++){
+    for(var c=0;c<iproot.cplist[e].length;c++){
+      var d = transPos([iproot.cplist[e][c][0],iproot.cplist[e][c][1]], geomW, geomD);
       ctx[0].beginPath();
       ctx[0].arc(d[0], d[1], radius, 0, Math.PI*2, false);
       ctx[0].stroke();
     }
   }
-  
+  debug.draw(ctx[0]);
 };
 
 var print=function(str){
