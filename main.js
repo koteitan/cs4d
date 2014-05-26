@@ -311,6 +311,7 @@ InequalityPolytope.prototype.listCrossPoints = function(){
     }//else
   }//i
 }
+var pointergroup=[];
 InequalityPolytope.prototype.listSegments = function(){
   this.seglist = [];
   for(var ei=0;ei<this.cplist.length;ei++){
@@ -326,10 +327,12 @@ InequalityPolytope.prototype.listSegments = function(){
           strokeStyle:"yellow",
           type:"circle", 
           c   :transPos(m, geomW, geomD), 
-          r   :10});
+          r   :2});
         debug.addItem({
           fillStyle:"yellow",
-          type:"text",
+          strokeStyle:"yellow",
+          type:"pointer",
+          group:pointergroup,
           text:"(ei="+ei+" ci="+ci+")",
           p   :transPos(m, geomW, geomD)});
         if(this.testReplacedBoundary(m, me, true) 
@@ -376,7 +379,7 @@ window.onload=function(){
   initGui();
   initBody();
   procDraw();
-//  setInterval(procAll, 1000/frameRate); // main loop
+  setInterval(procAll, 1000/frameRate); // main loop
 }
 //MAIN LOOP ------------------------
 var procAll=function(){
