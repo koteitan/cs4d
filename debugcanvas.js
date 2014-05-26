@@ -1,3 +1,27 @@
+/*----------------------------
+debugcanvas.js
+ debugging tool of canvas
+-----------------------------*/
+/* usage:
+
+var canvas  = document.getElementById("canvas");
+var ctx     = canvas.getContext('2d');
+var drawall = function(){debug.draw();}
+setInterval(drawall, 100);
+
+var debug = new Debug();
+debug.group = [];
+var p = [ [1,2],[3,4],[5,6] ];
+for (i=0;i<3;i++){
+  debug.additem({
+    type :"pointer",
+    group:debug.group,
+    text :"particle"+i,
+    p    :p[i])});
+  );
+}
+
+*/
 var Debug = function(){
   this.itemlist = [];
 }
