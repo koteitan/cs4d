@@ -200,6 +200,11 @@ var ang2rot=function(a, cos, sin){
   ];
 };
 
+var product = function(v1,v2){
+  var a = 0;
+  for(var i=0;i<v1.length;i++) a += v1[i]*v2[i];
+  return a;
+};
 
 var testMatrix=function(){
   var str="";
