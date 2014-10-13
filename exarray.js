@@ -90,5 +90,17 @@ Array.prototype.pushUniquely = function(e){
   }
   return this.push(e)-1;
 }
+Array.zeros = function(v){
+  var v0 = v[0];
+  var ans = new Array(v0);
+  if(v.length==1){
+    for(var i=0;i<v0;i++) ans[i] = 0;
+  }else{
+    var v1=v.clone();
+    v1.shift();
+    for(var i=0;i<v0;i++) ans[i] = Array.zeros(v1);
+  }
+  return ans;
+}
 
 
