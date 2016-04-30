@@ -1,0 +1,5 @@
+/* test point for ax+by+c=0 [xm,ym] */
+display2d:false$
+e1:solve([-b*x+a*y+b*xm-a*ym=0, (x-xm)^2+(y-ym)^2=D^2],[x,y])$
+e2:ratsubst(r^2,a^2+b^2,e1)$
+e3:expand(e2);

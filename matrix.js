@@ -4,6 +4,25 @@
 /* require tag below:
   <script type="text/javascript" src="./matrix.js"></script>
 */
+var trans = function(a){
+  if(a instanceof Array){
+    if(a[0] instanceof Array){
+      a0 = a;
+    }else{
+      a0 = [a];
+    }
+    var b = new Array(a0[0].length);
+    for(var i=0;i<b.length;i++){
+      b[i] = new Array(a0.length);
+      for(var j=0;j<b[0].length;j++){
+        b[i][j]=a0[j][i];
+      }
+    }
+    return b;
+  }else{
+    return a;
+  }
+}
 var inv = function(a){
   if(a.length==2){
     var det = a[0][0]*a[1][1]-a[0][1]*a[1][0];
