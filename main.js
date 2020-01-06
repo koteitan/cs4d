@@ -326,38 +326,35 @@ InequalityPolytope.prototype.listCrossPoints = function(){
       }
     }else{
       // conic line
-      /*         (a,b,c  (x
-         (x,y,1)  d,e,f   y
-                  g,h,i)  1)
-      = ax^2 + ey^2 + (b+d)xy + (c+g)x + (f+h)y + i = 0
-      = m[0][0]x^2 + m[1][1]y^2 + m[2][2] + 
-      + (m[0][1]+m[1][0])xy 
-      + (m[0][2]+m[2][0])x 
-      + (m[1][2]+m[2][1])y  = f = 0
-      df/dy = 2m[1][1]y + (m[0][1]+m[1][0])x + m[1][2]+m[2][1]
-      df/dx = 2m[0][0]x + (m[0][1]+m[1][0])y + m[0][2]+m[2][0]
-      */
       this.cplist.sort(function(a,b){
-        var am = a[2];
-        var bm = b[2];
-        return Math.atan2(
-          (am[0][0]+am[0][0])*a[0]
-         +(am[1][2]+am[2][1])*a[1]
-         +(am[0][2]+am[2][0])     ,
-          (am[1][1]+am[1][1])*a[1]
-         +(am[0][2]+am[2][0])*a[0]
-         +(am[1][2]+am[2][1])
-         )     -Math.atan2(
-          (bm[0][0]+bm[0][0])*b[0]
-         +(bm[1][2]+bm[2][1])*b[1]
-         +(bm[0][2]+bm[2][0])     ,
-          (bm[1][1]+bm[1][1])*b[1]
-         +(bm[0][2]+bm[2][0])*b[0]
-         +(bm[1][2]+bm[2][1])
-        );
+        var df_a = dfconic(e,a);
+        var df_b = dfconic(e,b);
+        return  Math.atan2(df_a[1], df_a[0])
+               -Math.atan2(df_b[1], df_b[0]);
       });//sort
     }//else
   }//i
+}
+// dfconic(m,q)=[df/dx|_{(x,y)=q}, df/dy|_{(x,y)=q}]
+var dfconic = function(m, q){ 
+  /*         (a,b,c  (x
+     (x,y,1)  d,e,f   y
+              g,h,i)  1)
+  = ax^2 + ey^2 + (b+d)xy + (c+g)x + (f+h)y + i = 0
+  = m[0][0]x^2 + m[1][1]y^2 + m[2][2] + 
+  + (m[0][1]+m[1][0])xy 
+  + (m[0][2]+m[2][0])x 
+  + (m[1][2]+m[2][1])y  = f = 0
+  df/dx = 2m[0][0]x + (m[0][1]+m[1][0])y + m[0][2]+m[2][0]
+  df/dy = 2m[1][1]y + (m[0][1]+m[1][0])x + m[1][2]+m[2][1] */
+  return [
+     (m[0][0]+m[0][0])*q[0]
+    +(m[0][1]+m[1][0])*q[1]
+    +(m[0][2]+m[2][0]),
+     (m[1][1]+m[1][1])*q[0]
+    +(m[0][1]+m[1][0])*q[1]
+    +(m[1][2]+m[2][1])
+  ];
 }
 var pointergroup=[];
 InequalityPolytope.prototype.listSegments = function(){
@@ -367,36 +364,35 @@ InequalityPolytope.prototype.listSegments = function(){
     var me = this.eqlist[ei];
     var D  = 1/10000;
     for(var ci=0;ci<cl.length-1;ci++){
-                                    if(ei==1 && ci==1){
-                                      var x=1;
-                                    }
       /* make test point */
-      if(1){
-        var m = [(cl[ci+0][0]+cl[ci+1][0])/2, 
-                 (cl[ci+0][1]+cl[ci+1][1])/2];
-        debug.addItem({
-          strokeStyle:"yellow",
-          type:"circle", 
-          c   :transPos(m, geomW, geomD), 
-          r   :2});
-        debug.addItem({
-          fillStyle:"yellow",
-          strokeStyle:"yellow",
-          type:"pointer",
-          group:pointergroup,
-          text:"(ei="+ei+" ci="+ci+")",
-          p   :transPos(m, geomW, geomD)});
-          var vt = iproot.testReplacedBoundary(m, me, true );
-          var vf = iproot.testReplacedBoundary(m, me, false);
-          if(vt != vf){
-          var s = new Segment({
-            type:"line", 
-            p  :[cl[ci+0],cl[ci+1]]
-          });
-          this.seglist.push(s);
-        }
+      var m;
+      if(me[0][0]==0&&me[1][1]==0){ // line
+        // m = midpoint
+        m=[(cl[ci+0][0]+cl[ci+1][0])/2, 
+           (cl[ci+0][1]+cl[ci+1][1])/2];
       }else{
       }
+      debug.addItem({
+        strokeStyle:"yellow",
+        type:"circle", 
+        c   :transPos(m, geomW, geomD), 
+        r   :2});
+      debug.addItem({
+        fillStyle:"yellow",
+        strokeStyle:"yellow",
+        type:"pointer",
+        group:pointergroup,
+        text:"(ei="+ei+" ci="+ci+")",
+        p   :transPos(m, geomW, geomD)});
+      var vt = iproot.testReplacedBoundary(m, me, true );
+      var vf = iproot.testReplacedBoundary(m, me, false);
+      if(vt != vf){
+        var s = new Segment({
+          type:"line", 
+          p  :[cl[ci+0],cl[ci+1]]
+          });
+        this.seglist.push(s);
+      }//if 
     }//ci
   }//ei
 }
