@@ -256,25 +256,26 @@ InequalityPolytope.prototype.listCrossPoints = function(){
     this.cplist[i]=[];
     var e=this.eqlist[i];
     // find all cross point in display for line i
-    for(var j=i+1;j<this.eqlist.length;j++){
+    for(var j=0;j<this.eqlist.length;j++){
+      if(i==j)continue;
       var cq = crossPoint(e, this.eqlist[j]);
       if(cq.length==2 && 
         geomW.w[0][0]<=cq[0] && cq[0]<=geomW.w[1][0] &&
         geomW.w[0][1]<=cq[1] && cq[1]<=geomW.w[1][1]){
         // if within display
-        this.cplist[i].push([cq[0], cq[1], e]);
+        this.cplist[i].push([cq[0], cq[1], j]);
       }
     }// for j
     
     // sort corss points
     if(e.length == 3 && e[0][0]==0 && e[1][1]==0){
       //line
-      if(e[1][0]!=0){
+      if(e[2][1]!=0){
         // oblique line
-        this.cplist.sort(function(a,b){return a[0]-b[0];});
+        this.cplist[i].sort(function(a,b){return a[0]-b[0];});
       }else{
         // vertical line
-        this.cplist.sort(function(a,b){return a[1]-b[1];});
+        this.cplist[i].sort(function(a,b){return a[1]-b[1];});
       }
     }else{
       // conic line
@@ -398,15 +399,15 @@ var initBody=function(){
 /*
   var innersphere = new InequalityPolytope([[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,-(21/54)*(21/54)]],-1);
   */
-  ip0 = new InequalityPolytope([
+  ip0 = new InequalityPolytope([ //x>0
     [0,  0  , 0.5],
     [0,  0  , 0  ],
     [0.5,0  , 0  ]],+1);
-  ip1 = new InequalityPolytope([
+  ip1 = new InequalityPolytope([ //y>0
     [0,  0  , 0  ],
     [0,  0  , 0.5],
     [0  ,0.5, 0  ]],+1);
-  ip2 = new InequalityPolytope([
+  ip2 = new InequalityPolytope([ //x+y-0.5<0 y<-x+0.5
     [0,  0  , 0.5],
     [0,  0  , 0.5],
     [0.5,0.5,-0.5]],-1);
