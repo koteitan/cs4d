@@ -247,10 +247,51 @@ InequalityPolytope.prototype.listCrossPoints = function(){
       if(cq[0]==NaN || cq[1]==NaN){
         return [];
       }else{
-        return cq;
+        return [cq];
       }
-    }else{
-      //2d lines only
+    }else if(eq0.length == 3){
+      if(eq0[0][0]!=0){ var tmp=eq1;eq1=eq0;eq0=tmp; } //swap
+      if(eq0[0][0]==0 && eq0[0][0]==0 && eq0[0][1]==0 && eq0[1][0]){ //eq0 is line
+        //eq0 == la*x+lb*y+lc=0 (line)
+        //eq1 == q'Sq=0         (2nd order)
+        var la=eq0[2][0]+eq0[0][2];
+        var lb=eq0[2][1]+eq0[0][1];
+        var lc=eq0[2][2];
+        if(la==0 && lb==0) return [];
+        //get x
+        var x;
+        if(lb!=0){
+          //eliminate y
+          var q=[[1,-la/lb,0],[0,-c/b,1]];
+          var S=mulxx(trans(q),mulxv(q1,q));
+          // ax^2+bx+c=0;
+          var a=S[0][0];
+          var b=S[0][1]+S[1][0];
+          var c=S[1][1];
+          var D=b*b-4*a*c;
+          if(D<=0) return [];
+          x=[-b+sqrt(D),-b-sqrt(D)];
+        }else{
+          x=-lc/la;
+        }
+        //get y
+        var y;
+        if(la!=0){
+          //eliminate x
+          var q=[[-lb/la,1,0],[-lc/la,1,0]];
+          var S=mulxx(trans(q),mulxv(q1,q));
+          // ay^2+by+c=0;
+          var a=S[0][0];
+          var b=S[0][1]+S[1][0];
+          var c=S[1][1];
+          var D=b*b-4*a*c;
+          if(D<=0) return [];
+          y=[-b+sqrt(D),-b-sqrt(D)];
+        }else{
+          y=-lc/lb;
+        }
+      }
+    }else{//unsupported line
       return [];
     }
   }// crossPoint()
@@ -261,12 +302,15 @@ InequalityPolytope.prototype.listCrossPoints = function(){
     // find all cross point in display for line i
     for(var j=0;j<this.eqlist.length;j++){
       if(i==j)continue;
-      var cq = crossPoint(e, this.eqlist[j]);
-      if(cq.length==2 && 
-        geomW.w[0][0]<=cq[0] && cq[0]<=geomW.w[1][0] &&
-        geomW.w[0][1]<=cq[1] && cq[1]<=geomW.w[1][1]){
-        // if within display
-        this.cplist[i].push([cq[0], cq[1], j]);
+      var cqlist = crossPoint(e, this.eqlist[j]);
+      for(var c=0;c<cqlist.length;c++){
+        var cq=cqlist[c];
+        if(cq.length==2 && 
+          geomW.w[0][0]<=cq[0] && cq[0]<=geomW.w[1][0] &&
+          geomW.w[0][1]<=cq[1] && cq[1]<=geomW.w[1][1]){
+          // if within display
+          this.cplist[i].push([cq[0], cq[1], j]);
+        }
       }
     }// for j
     
