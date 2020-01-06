@@ -466,7 +466,7 @@ var procDraw=function(){
   for(var x=-1;x<+1;x+=0.04){
     for(var y=-1;y<+1;y+=0.04){
       var dc = transPos([x,y], geomW, geomD);
-      if(iproot.test([x,y,1])){
+      if(iproot.test([x,y])){
         ctx[0].beginPath();
         ctx[0].arc(dc[0], dc[1], radius, 0, Math.PI*2, false);
         ctx[0].stroke();
