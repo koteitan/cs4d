@@ -1,0 +1,84 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+Array	exarray.js	/^Array.prototype.min = function(){$/;"	c
+Array	matrix.js	/^Array.prototype.toString = function(){$/;"	c
+Array.argmax	exarray.js	/^Array.prototype.argmax = function(){$/;"	m
+Array.argmin	exarray.js	/^Array.prototype.argmin = function(){$/;"	m
+Array.clone	exarray.js	/^Array.prototype.clone = function(){$/;"	m
+Array.isEqual	exarray.js	/^Array.prototype.isEqual = function(a){$/;"	m
+Array.max	exarray.js	/^Array.prototype.max = function(){$/;"	m
+Array.min	exarray.js	/^Array.prototype.min = function(){$/;"	m
+Array.pushUniquely	exarray.js	/^Array.prototype.pushUniquely = function(e){$/;"	m
+Array.sum	exarray.js	/^Array.prototype.sum = function(){$/;"	m
+Array.toString	matrix.js	/^Array.prototype.toString = function(){$/;"	m
+Array.zeros	exarray.js	/^Array.zeros = function(v){$/;"	f
+Camera	geom.js	/^Camera.prototype.clone=function(){ $/;"	c
+Camera	geom.js	/^var Camera = function(_pos, _dirmz, _dirx, _screenDistance){$/;"	f
+Camera.clone	geom.js	/^Camera.prototype.clone=function(){ $/;"	m
+Debug	debugcanvas.js	/^var Debug = function(){$/;"	c
+Debug.addItem	debugcanvas.js	/^Debug.prototype.addItem = function(item){$/;"	m
+Debug.draw	debugcanvas.js	/^Debug.prototype.draw = function(ctx){$/;"	m
+Geom	geom.js	/^var Geom = function(_dims, _w){$/;"	c
+InequalityPolytope	main.js	/^InequalityPolytope.prototype.toString = function(){$/;"	c
+InequalityPolytope	main.js	/^var InequalityPolytope = function(){$/;"	f
+InequalityPolytope.draw	main.js	/^InequalityPolytope.prototype.draw = function(ctx){$/;"	m
+InequalityPolytope.listCrossPoints	main.js	/^InequalityPolytope.prototype.listCrossPoints = function(){$/;"	m
+InequalityPolytope.listInequalities	main.js	/^InequalityPolytope.prototype.listInequalities = function(eqlist){$/;"	m
+InequalityPolytope.listSegments	main.js	/^InequalityPolytope.prototype.listSegments = function(){$/;"	m
+InequalityPolytope.test	main.js	/^InequalityPolytope.prototype.test = function(q){$/;"	m
+InequalityPolytope.testReplacedBoundary	main.js	/^InequalityPolytope.prototype.testReplacedBoundary = function(q, boundaryMatrix, assumption){$/;"	m
+InequalityPolytope.toString	main.js	/^InequalityPolytope.prototype.toString = function(){$/;"	m
+InequalityPolytope.var.crossPoint	main.js	/^  var crossPoint = function(eq0, eq1){$/;"	m
+Segment	main.js	/^var Segment = function(param){$/;"	c
+abs	matrix.js	/^var abs = function(a){$/;"	f
+add	matrix.js	/^var add = function(a0,a1){$/;"	f
+ang2rot	matrix.js	/^var ang2rot=function(a, cos, sin){$/;"	f
+angTheta2rot	geom.js	/^var angTheta2rot = function(a, theta){$/;"	f
+case.draw	debugcanvas.js	/^    case "text":$/;"	f
+case.draw	main.js	/^    case "line":$/;"	f
+chisqr_1_0p05	exmath.js	/^var chisqr_1_0p05 = function(){$/;"	f
+cross	matrix.js	/^var cross=function(a, b){$/;"	f
+dims	main.js	/^var dims = 4;$/;"	v
+dot	matrix.js	/^var dot=function(a, b){$/;"	f
+drawBoundary	main.js	/^var drawBoundary = function(ineq, c0, c1){$/;"	f
+frameRate	main.js	/^var frameRate;$/;"	v
+geomD	main.js	/^var geomD;$/;"	v
+getRotate	geom.js	/^var getRotate = function(ina0, inb0, ina1, inb1){$/;"	f
+getRotatePos	geom.js	/^var getRotatePos = function(ina0, ina1){$/;"	f
+initBody	main.js	/^var initBody=function(){$/;"	f
+initGui	main.js	/^var initGui=function(){$/;"	f
+inv	matrix.js	/^var inv = function(a){$/;"	f
+isKeyTyping	main.js	/^var isKeyTyping;$/;"	v
+isRequestedDraw	main.js	/^var isRequestedDraw = true;$/;"	v
+item.draw	debugcanvas.js	/^    item.draw = function(ctx){$/;"	f
+ln	exmath.js	/^var ln = function(x){$/;"	f
+log10	exmath.js	/^var log10 = function(x){$/;"	f
+log2	exmath.js	/^var log2 = function(x){$/;"	f
+mul	matrix.js	/^var mul = function(a0, a1){$/;"	f
+mulkv	matrix.js	/^var mulkv = function(k, v){$/;"	f
+mulkx	matrix.js	/^var mulkx = function(k, x){$/;"	f
+mulxv	matrix.js	/^var mulxv = function(x, v){$/;"	f
+mulxx	matrix.js	/^var mulxx = function(x0, x1){$/;"	f
+normalize	matrix.js	/^var normalize=function(a){$/;"	f
+pointergroup	main.js	/^var pointergroup=[];$/;"	v
+print	main.js	/^var print=function(str){$/;"	f
+procAll	main.js	/^var procAll=function(){$/;"	f
+procDraw	main.js	/^var procDraw=function(){$/;"	f
+product	matrix.js	/^var product = function(v1,v2){$/;"	f
+secPframe	main.js	/^var secPframe = 1; \/\/ [sec\/frame]$/;"	v
+sign	exmath.js	/^var sign = function(x){$/;"	f
+sub	matrix.js	/^var sub = function(a0,a1){$/;"	f
+testGeom	geom.js	/^var testGeom=function(){$/;"	f
+testMatrix	matrix.js	/^var testMatrix=function(){$/;"	f
+timenow	main.js	/^var timenow=0;$/;"	v
+trans	matrix.js	/^var trans = function(a){$/;"	f
+transCam	geom.js	/^var transCam = function(target, c, c0, gW, gS){$/;"	f
+transPos	geom.js	/^var transPos=function(x, g0, g1){$/;"	f
+transPosElem	geom.js	/^var transPosElem = function(x, d, g0, g1){$/;"	f
+transScale	geom.js	/^var transScale=function(x, g0, g1){$/;"	f
+transScaleElem	geom.js	/^var transScaleElem = function(x, d, g0, g1){$/;"	f
+window.onload	main.js	/^window.onload=function(){$/;"	f

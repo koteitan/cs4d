@@ -128,7 +128,8 @@ InequalityPolytope.prototype.test = function(q){
       }else{
         m = this.ineqlist[this.matrix];
       }
-      return product(q, mul(m, q)) * this.sign > 0;
+      var q2=q.clone();q2.push(1);
+      return product(q2, mul(m, q2)) * this.sign > 0;
     case "boolean":
       return this.value;
     case "operator":
@@ -170,25 +171,27 @@ InequalityPolytope.prototype.testReplacedBoundary = function(q, boundaryMatrix, 
       if(m.isEqual(boundaryMatrix)){
         return assumption;
       }else{
-        return product(q, mul(m, q)) * this.sign > 0;
+        var q2=q.clone();q2.push(1);
+        return product(q2, mul(m, q2)) * this.sign > 0;
       }
     case "boolean":
       return this.value;
     case "operator":
       switch(this.operator){
         case "!":
+          var b = this.param[0].testReplacedBoundary(q,boundaryMatrix,assumption);
         return !b;
         case "|":
-          var b = this.param[0].test(q);
-          for(var i=1;i<this.param.length;i++) b = b || this.param[i].testReplacedBoundary(q,boundary,assumption);
+          var b = false;
+          for(var i=0;i<this.param.length;i++) b = b || this.param[i].testReplacedBoundary(q,boundaryMatrix,assumption);
         return b;
         case "&":
-          var b = this.param[0].test(q);
-          for(var i=1;i<this.param.length;i++) b = b && this.param[i].testReplacedBoundary(q,boundary,assumption);
+          var b = true;
+          for(var i=0;i<this.param.length;i++) b = b && this.param[i].testReplacedBoundary(q,boundaryMatrix,assumption);
         return b;
         case "^":
-          var b = this.param[0].test(q) | 0;
-          for(var i=1;i<this.param.length;i++) b ^= this.param[i].testReplacedBoundary(q,boundary,assumption);
+          var b = false;
+          for(var i=0;i<this.param.length;i++) b ^= this.param[i].testReplacedBoundary(q,boundaryMatrix,assumption);
         default:
         return b==1;
       }
@@ -320,6 +323,9 @@ InequalityPolytope.prototype.listSegments = function(){
     var me = this.eqlist[ei];
     var D  = 1/10000;
     for(var ci=0;ci<cl.length-1;ci++){
+                                    if(ei==1 && ci==1){
+                                      var x=1;
+                                    }
       /* make test point */
       if(1){
         var m = [(cl[ci+0][0]+cl[ci+1][0])/2, 
@@ -336,12 +342,12 @@ InequalityPolytope.prototype.listSegments = function(){
           group:pointergroup,
           text:"(ei="+ei+" ci="+ci+")",
           p   :transPos(m, geomW, geomD)});
-        if(this.testReplacedBoundary(m, me, true) 
-        != this.testReplacedBoundary(m, me, false)){
+          var vt = iproot.testReplacedBoundary(m, me, true );
+          var vf = iproot.testReplacedBoundary(m, me, false);
+          if(vt != vf){
           var s = new Segment({
             type:"line", 
-            p0  :cl[ci+0], 
-            p1  :cl[ci+0]
+            p  :[cl[ci+0],cl[ci+1]]
           });
           this.seglist.push(s);
         }
@@ -361,8 +367,11 @@ var Segment = function(param){
     case "line":
     this.draw = function(ctx){
       ctx.beginPath();
-      ctx.moveTo(this.param.p[0][0],this.param.p[0][1]);
-      ctx.lineTo(this.param.p[1][0],this.param.p[1][1]);
+      var dp;
+      dp=transPos(this.param.p[0],geomW, geomD);
+      ctx.moveTo(Math.floor(dp[0]),Math.floor(dp[1]));
+      dp=transPos(this.param.p[1],geomW, geomD);
+      ctx.lineTo(Math.floor(dp[0]),Math.floor(dp[1]));
       ctx.stroke();
     };
     break;
@@ -449,7 +458,7 @@ var procDraw=function(){
   ctx[0].lineWidth='1';
   ctx[0].strokeStyle='rgb(255,255,255)';
   
-  iproot.draw();
+  iproot.draw(ctx[0]);
   
   // draw all cross points [BLUE] ------------
   var radius = 4;
