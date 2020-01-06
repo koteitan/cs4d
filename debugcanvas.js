@@ -36,9 +36,9 @@ Debug.prototype.addItem = function(item){
             keeping away from each other */
     case "pointer":
     item.group.push(item);
-    var o = Math.floor(Math.random()*4)*Math.PI/2  +Math.PI/4
-           +           Math.random()   *Math.PI/8;
-    item.textp = [item.p[0]+50*Math.cos(o), item.p[1]+50*Math.sin(o)];
+    var o = -Math.PI/8;
+    item.textp = [item.p[0]+50*Math.cos(o)+2*Math.random(),
+                  item.p[1]+50*Math.sin(o)+2*Math.random()];
     item.textv = [0, 0];
     item.draw = function(ctx){
       if(!(typeof item.font === "undefined")){
@@ -55,9 +55,15 @@ Debug.prototype.addItem = function(item){
                    item.textp[0]-item.tw/2, 
                    item.textp[1]-1);
       ctx.beginPath();
-      ctx.moveTo  (item.textp[0]+item.tw/2,item.textp[1]);
-      ctx.lineTo  (item.textp[0]-item.tw/2,item.textp[1]);
-      ctx.lineTo  (item.    p[0]          ,item.    p[1]);
+      if(item.p[0]<item.textp[0]){
+        ctx.moveTo  (item.textp[0]+item.tw/2,item.textp[1]);
+        ctx.lineTo  (item.textp[0]-item.tw/2,item.textp[1]);
+        ctx.lineTo  (item.    p[0]          ,item.    p[1]);
+      }else{
+        ctx.moveTo  (item.textp[0]-item.tw/2,item.textp[1]);
+        ctx.lineTo  (item.textp[0]+item.tw/2,item.textp[1]);
+        ctx.lineTo  (item.    p[0]          ,item.    p[1]);
+      }
       ctx.stroke();
       
       /* motion */
